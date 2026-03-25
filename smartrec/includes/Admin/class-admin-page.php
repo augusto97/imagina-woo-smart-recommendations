@@ -65,45 +65,16 @@ class AdminPage {
 	 * @return void
 	 */
 	public function enqueue_admin_assets( $hook ) {
-		if ( 'woocommerce_page_smartrec' !== $hook && 'post.php' !== $hook && 'post-new.php' !== $hook ) {
+		// Only load on product edit pages (for meta box). SmartRec page uses inline styles/scripts.
+		if ( 'post.php' !== $hook && 'post-new.php' !== $hook ) {
 			return;
 		}
 
-		// Admin CSS — no dependencies to avoid blocking.
 		wp_enqueue_style(
 			'smartrec-admin',
 			SMARTREC_PLUGIN_URL . 'assets/css/smartrec-admin.css',
 			array(),
 			SMARTREC_VERSION
-		);
-
-		// Color picker (optional — only on settings page).
-		if ( 'woocommerce_page_smartrec' === $hook ) {
-			wp_enqueue_style( 'wp-color-picker' );
-			wp_enqueue_script( 'wp-color-picker' );
-		}
-
-		// Admin JS — depends on jQuery only; color picker is init'd if available.
-		wp_enqueue_script(
-			'smartrec-admin',
-			SMARTREC_PLUGIN_URL . 'assets/js/smartrec-admin.js',
-			array( 'jquery' ),
-			SMARTREC_VERSION,
-			true
-		);
-
-		wp_localize_script(
-			'smartrec-admin',
-			'smartrecAdmin',
-			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'smartrec_admin' ),
-				'i18n'    => array(
-					'confirmClearCache' => __( 'Are you sure you want to clear all caches?', 'smartrec' ),
-					'confirmRebuild'    => __( 'This will rebuild all product relationships. Continue?', 'smartrec' ),
-					'saved'             => __( 'Settings saved.', 'smartrec' ),
-				),
-			)
 		);
 	}
 
@@ -139,7 +110,11 @@ class AdminPage {
 			'tools'     => __( 'Tools', 'smartrec' ),
 		);
 
-		// Inline CSS — guarantees styles load regardless of enqueue issues.
+		// Enqueue color picker assets.
+		wp_enqueue_style( 'wp-color-picker' );
+		wp_enqueue_script( 'wp-color-picker' );
+
+		// Inline CSS — guarantees styles load regardless of enqueue path issues.
 		$css_file = SMARTREC_PLUGIN_DIR . 'assets/css/smartrec-admin.css';
 		if ( file_exists( $css_file ) ) {
 			echo '<style>' . file_get_contents( $css_file ) . '</style>' . "\n"; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents

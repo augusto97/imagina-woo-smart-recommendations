@@ -172,6 +172,7 @@ class Renderer {
 				'show_rating'   => $this->settings->get( 'show_rating', true ),
 				'show_add_to_cart' => $this->settings->get( 'show_add_to_cart', true ),
 				'show_reason'   => $this->settings->get( 'show_reason', true ),
+				'use_wc_template' => $this->settings->get( 'use_wc_template', false ),
 				'css_class'     => '',
 			)
 		);

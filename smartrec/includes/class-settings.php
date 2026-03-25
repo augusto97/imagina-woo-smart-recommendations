@@ -122,6 +122,7 @@ class Settings {
 			'default_limit'             => 8,
 			'default_layout'            => 'grid',
 			'use_wc_template'           => false,
+			'inherit_theme_fonts'       => true,
 			'show_powered_by'           => false,
 
 			// Tracking.

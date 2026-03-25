@@ -427,6 +427,8 @@ class AdminPage {
 			'cache_ttl_product'    => 'int',
 			'cache_ttl_category'   => 'int',
 			'cache_ttl_cart'       => 'int',
+			'use_wc_template'      => 'bool',
+			'inherit_theme_fonts'  => 'bool',
 			'ajax_loading'         => 'bool',
 			'show_price'           => 'bool',
 			'show_rating'          => 'bool',
@@ -453,12 +455,18 @@ class AdminPage {
 		);
 
 		foreach ( $settings_map as $key => $type ) {
+			$post_key = 'smartrec_' . $key;
 			if ( 'bool' === $type ) {
-				$this->settings->set( $key, ! empty( $_POST[ 'smartrec_' . $key ] ) );
+				// Radio buttons send "0" or "1"; checkboxes only send when checked.
+				if ( isset( $_POST[ $post_key ] ) && in_array( $_POST[ $post_key ], array( '0', '1' ), true ) ) {
+					$this->settings->set( $key, '1' === $_POST[ $post_key ] );
+				} else {
+					$this->settings->set( $key, ! empty( $_POST[ $post_key ] ) );
+				}
 			} elseif ( 'int' === $type ) {
-				$this->settings->set( $key, absint( $_POST[ 'smartrec_' . $key ] ?? 0 ) );
+				$this->settings->set( $key, absint( $_POST[ $post_key ] ?? 0 ) );
 			} else {
-				$this->settings->set( $key, sanitize_text_field( wp_unslash( $_POST[ 'smartrec_' . $key ] ?? '' ) ) );
+				$this->settings->set( $key, sanitize_text_field( wp_unslash( $_POST[ $post_key ] ?? '' ) ) );
 			}
 		}
 

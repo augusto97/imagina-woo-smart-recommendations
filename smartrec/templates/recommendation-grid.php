@@ -30,18 +30,29 @@ $css_class = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings['css_
 
 	<?php if ( ! empty( $settings['use_wc_template'] ) ) : ?>
 
-		<ul class="smartrec-widget__grid products columns-<?php echo esc_attr( $columns ); ?>">
-			<?php
-			foreach ( $products as $product ) {
-				$GLOBALS['post']    = get_post( $product->get_id() );
-				$GLOBALS['product'] = $product;
-				setup_postdata( $GLOBALS['post'] );
+		<div class="woocommerce smartrec-wc-products">
+			<ul class="products columns-<?php echo esc_attr( $columns ); ?>">
+				<?php
+				// Use WooCommerce loop columns filter so themes pick up the right value.
+				$smartrec_prev_columns = 0;
+				$smartrec_set_columns  = static function () use ( $columns ) {
+					return $columns;
+				};
+				add_filter( 'loop_shop_columns', $smartrec_set_columns, 999 );
 
-				wc_get_template_part( 'content', 'product' );
-			}
-			wp_reset_postdata();
-			?>
-		</ul>
+				foreach ( $products as $product ) {
+					$GLOBALS['post']    = get_post( $product->get_id() );
+					$GLOBALS['product'] = $product;
+					setup_postdata( $GLOBALS['post'] );
+
+					wc_get_template_part( 'content', 'product' );
+				}
+				wp_reset_postdata();
+
+				remove_filter( 'loop_shop_columns', $smartrec_set_columns, 999 );
+				?>
+			</ul>
+		</div>
 
 	<?php else : ?>
 

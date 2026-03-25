@@ -69,19 +69,25 @@ class AdminPage {
 			return;
 		}
 
-		wp_enqueue_style( 'wp-color-picker' );
-
+		// Admin CSS — no dependencies to avoid blocking.
 		wp_enqueue_style(
 			'smartrec-admin',
 			SMARTREC_PLUGIN_URL . 'assets/css/smartrec-admin.css',
-			array( 'wp-color-picker' ),
+			array(),
 			SMARTREC_VERSION
 		);
 
+		// Color picker (optional — only on settings page).
+		if ( 'woocommerce_page_smartrec' === $hook ) {
+			wp_enqueue_style( 'wp-color-picker' );
+			wp_enqueue_script( 'wp-color-picker' );
+		}
+
+		// Admin JS — depends on jQuery only; color picker is init'd if available.
 		wp_enqueue_script(
 			'smartrec-admin',
 			SMARTREC_PLUGIN_URL . 'assets/js/smartrec-admin.js',
-			array( 'jquery', 'wp-color-picker' ),
+			array( 'jquery' ),
 			SMARTREC_VERSION,
 			true
 		);

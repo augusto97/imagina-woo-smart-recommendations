@@ -100,6 +100,32 @@ class SettingsPage {
 					</select>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Product Card Style', 'smartrec' ); ?></th>
+				<td>
+					<fieldset>
+						<label>
+							<input type="radio" name="smartrec_use_wc_template" value="0" <?php checked( $this->settings->get( 'use_wc_template', false ), false ); ?>>
+							<?php esc_html_e( 'SmartRec cards (customizable via Appearance settings below)', 'smartrec' ); ?>
+						</label>
+						<br>
+						<label>
+							<input type="radio" name="smartrec_use_wc_template" value="1" <?php checked( $this->settings->get( 'use_wc_template', false ), true ); ?>>
+							<strong><?php esc_html_e( 'Use WooCommerce product template', 'smartrec' ); ?></strong>
+							&mdash; <span class="description"><?php esc_html_e( 'Products will look exactly like the rest of your store (recommended for best theme compatibility)', 'smartrec' ); ?></span>
+						</label>
+					</fieldset>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Inherit Theme Fonts', 'smartrec' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="smartrec_inherit_theme_fonts" value="1" <?php checked( $this->settings->get( 'inherit_theme_fonts', true ) ); ?>>
+						<?php esc_html_e( 'Use your theme\'s font family for titles and product names (recommended)', 'smartrec' ); ?>
+					</label>
+				</td>
+			</tr>
 		</table>
 		<?php
 	}
@@ -214,65 +240,75 @@ class SettingsPage {
 	private function render_locations_section() {
 		$locations = array(
 			'single_product_below' => array(
-				'label' => __( 'Below Single Product', 'smartrec' ),
-				'desc'  => __( 'Shows after the product summary on single product pages.', 'smartrec' ),
-				'hook'  => 'woocommerce_after_single_product_summary',
+				'label'   => __( 'Below Single Product', 'smartrec' ),
+				'desc'    => __( 'After product summary on single product pages', 'smartrec' ),
+				'hook'    => 'woocommerce_after_single_product_summary',
+				'default' => 'personalized_mix',
 			),
 			'single_product_tabs'  => array(
-				'label' => __( 'Product Tab "Recommended"', 'smartrec' ),
-				'desc'  => __( 'Adds a new tab in the product data tabs section.', 'smartrec' ),
-				'hook'  => 'woocommerce_product_tabs',
+				'label'   => __( 'Product Tab', 'smartrec' ),
+				'desc'    => __( 'New "Recommended" tab in product data tabs', 'smartrec' ),
+				'hook'    => 'woocommerce_product_tabs',
+				'default' => 'bought_together',
 			),
 			'cart_page'            => array(
-				'label' => __( 'Cart Page', 'smartrec' ),
-				'desc'  => __( 'Shows below the cart table.', 'smartrec' ),
-				'hook'  => 'woocommerce_after_cart_table',
+				'label'   => __( 'Cart Page', 'smartrec' ),
+				'desc'    => __( 'Below the cart table', 'smartrec' ),
+				'hook'    => 'woocommerce_after_cart_table',
+				'default' => 'bought_together',
 			),
 			'cart_page_cross_sells' => array(
-				'label' => __( 'Cart Cross-Sells (replace WC)', 'smartrec' ),
-				'desc'  => __( 'Replaces WooCommerce native cross-sells on the cart page.', 'smartrec' ),
-				'hook'  => 'woocommerce_cross_sell_display',
+				'label'   => __( 'Cart Cross-Sells', 'smartrec' ),
+				'desc'    => __( 'Replaces WooCommerce native cross-sells', 'smartrec' ),
+				'hook'    => 'woocommerce_cross_sell_display',
+				'default' => 'complementary',
 			),
 			'checkout_page'        => array(
-				'label' => __( 'Checkout Page', 'smartrec' ),
-				'desc'  => __( 'Shows after the checkout form.', 'smartrec' ),
-				'hook'  => 'woocommerce_after_checkout_form',
+				'label'   => __( 'Checkout Page', 'smartrec' ),
+				'desc'    => __( 'After the checkout form', 'smartrec' ),
+				'hook'    => 'woocommerce_after_checkout_form',
+				'default' => 'bought_together',
 			),
 			'category_page'        => array(
-				'label' => __( 'Category / Archive Page', 'smartrec' ),
-				'desc'  => __( 'Shows after the product loop on category pages.', 'smartrec' ),
-				'hook'  => 'woocommerce_after_shop_loop',
+				'label'   => __( 'Category / Archive', 'smartrec' ),
+				'desc'    => __( 'After the product loop on category pages', 'smartrec' ),
+				'hook'    => 'woocommerce_after_shop_loop',
+				'default' => 'trending',
 			),
 			'empty_cart'           => array(
-				'label' => __( 'Empty Cart', 'smartrec' ),
-				'desc'  => __( 'Shows when the cart is empty.', 'smartrec' ),
-				'hook'  => 'woocommerce_cart_is_empty',
+				'label'   => __( 'Empty Cart', 'smartrec' ),
+				'desc'    => __( 'When cart is empty', 'smartrec' ),
+				'hook'    => 'woocommerce_cart_is_empty',
+				'default' => 'trending',
 			),
 			'thank_you_page'       => array(
-				'label' => __( 'Thank You Page', 'smartrec' ),
-				'desc'  => __( 'Shows on the order confirmation page.', 'smartrec' ),
-				'hook'  => 'woocommerce_thankyou',
+				'label'   => __( 'Thank You Page', 'smartrec' ),
+				'desc'    => __( 'Order confirmation page', 'smartrec' ),
+				'hook'    => 'woocommerce_thankyou',
+				'default' => 'complementary',
 			),
 			'my_account'           => array(
-				'label' => __( 'My Account Dashboard', 'smartrec' ),
-				'desc'  => __( 'Shows on the customer account dashboard.', 'smartrec' ),
-				'hook'  => 'woocommerce_account_dashboard',
+				'label'   => __( 'My Account', 'smartrec' ),
+				'desc'    => __( 'Customer account dashboard', 'smartrec' ),
+				'hook'    => 'woocommerce_account_dashboard',
+				'default' => 'personalized_mix',
 			),
 		);
 
 		$engines = array(
-			'personalized_mix' => __( 'Personalized Mix (smart default)', 'smartrec' ),
+			'personalized_mix' => __( 'Personalized Mix', 'smartrec' ),
 			'similar'          => __( 'Similar Products', 'smartrec' ),
 			'bought_together'  => __( 'Bought Together', 'smartrec' ),
 			'viewed_together'  => __( 'Viewed Together', 'smartrec' ),
 			'recently_viewed'  => __( 'Recently Viewed', 'smartrec' ),
-			'trending'         => __( 'Trending Products', 'smartrec' ),
-			'complementary'    => __( 'Complementary Products', 'smartrec' ),
+			'trending'         => __( 'Trending', 'smartrec' ),
+			'complementary'    => __( 'Complementary', 'smartrec' ),
 		);
 
 		$layouts = array(
+			''        => __( 'Default', 'smartrec' ),
 			'grid'    => __( 'Grid', 'smartrec' ),
-			'slider'  => __( 'Slider / Carousel', 'smartrec' ),
+			'slider'  => __( 'Slider', 'smartrec' ),
 			'list'    => __( 'List', 'smartrec' ),
 			'minimal' => __( 'Minimal', 'smartrec' ),
 		);
@@ -284,74 +320,75 @@ class SettingsPage {
 		$location_columns = $this->settings->get( 'location_columns', array() );
 		?>
 		<h2><?php esc_html_e( 'Display Locations', 'smartrec' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Configure where recommendations appear and how they look in each position. Each location can use a different engine, layout, and number of products.', 'smartrec' ); ?></p>
+		<p class="description" style="margin-bottom:12px;"><?php esc_html_e( 'Choose where recommendations appear on your store. Click any row to expand its settings.', 'smartrec' ); ?></p>
 
-		<div class="smartrec-locations-grid">
-			<?php foreach ( $locations as $location_key => $location_info ) :
-				$is_enabled   = $this->settings->get( 'location_' . $location_key, false );
-				$cur_engine   = $location_engines[ $location_key ] ?? 'personalized_mix';
-				$cur_title    = $location_titles[ $location_key ] ?? '';
-				$cur_limit    = $location_limits[ $location_key ] ?? '';
-				$cur_layout   = $location_layouts[ $location_key ] ?? '';
-				$cur_columns  = $location_columns[ $location_key ] ?? '';
+		<div class="smartrec-locations">
+			<?php foreach ( $locations as $loc_key => $loc_info ) :
+				$is_enabled  = $this->settings->get( 'location_' . $loc_key, false );
+				$cur_engine  = $location_engines[ $loc_key ] ?? $loc_info['default'];
+				$cur_title   = $location_titles[ $loc_key ] ?? '';
+				$cur_limit   = $location_limits[ $loc_key ] ?? '';
+				$cur_layout  = $location_layouts[ $loc_key ] ?? '';
+				$cur_columns = $location_columns[ $loc_key ] ?? '';
 				?>
-				<div class="smartrec-location-card <?php echo $is_enabled ? 'smartrec-location-card--active' : ''; ?>">
-					<div class="smartrec-location-card__header">
-						<label class="smartrec-location-card__toggle">
+				<div class="smartrec-loc <?php echo $is_enabled ? 'smartrec-loc--active' : ''; ?>">
+					<div class="smartrec-loc__header" tabindex="0" role="button">
+						<label class="smartrec-loc__toggle" onclick="event.stopPropagation();">
 							<input type="checkbox"
-								   name="smartrec_location_<?php echo esc_attr( $location_key ); ?>"
+								   name="smartrec_location_<?php echo esc_attr( $loc_key ); ?>"
 								   value="1"
 								   class="smartrec-location-toggle"
 								   <?php checked( $is_enabled ); ?>>
-							<strong><?php echo esc_html( $location_info['label'] ); ?></strong>
 						</label>
-						<code class="smartrec-location-card__hook"><?php echo esc_html( $location_info['hook'] ); ?></code>
+						<div class="smartrec-loc__info">
+							<strong><?php echo esc_html( $loc_info['label'] ); ?></strong>
+							<span class="smartrec-loc__desc"><?php echo esc_html( $loc_info['desc'] ); ?></span>
+						</div>
+						<span class="smartrec-loc__engine-badge"><?php echo esc_html( $engines[ $cur_engine ] ?? $cur_engine ); ?></span>
+						<span class="smartrec-loc__arrow dashicons dashicons-arrow-down-alt2"></span>
 					</div>
-					<p class="smartrec-location-card__desc"><?php echo esc_html( $location_info['desc'] ); ?></p>
-
-					<div class="smartrec-location-card__fields">
-						<div class="smartrec-location-card__field">
-							<label><?php esc_html_e( 'Engine', 'smartrec' ); ?></label>
-							<select name="smartrec_loc_engine[<?php echo esc_attr( $location_key ); ?>]">
-								<?php foreach ( $engines as $eng_key => $eng_label ) : ?>
-									<option value="<?php echo esc_attr( $eng_key ); ?>" <?php selected( $cur_engine, $eng_key ); ?>>
-										<?php echo esc_html( $eng_label ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
+					<div class="smartrec-loc__body">
+						<div class="smartrec-loc__fields">
+							<div class="smartrec-loc__field">
+								<label><?php esc_html_e( 'Recommendation Engine', 'smartrec' ); ?></label>
+								<select name="smartrec_loc_engine[<?php echo esc_attr( $loc_key ); ?>]">
+									<?php foreach ( $engines as $eng_key => $eng_label ) : ?>
+										<option value="<?php echo esc_attr( $eng_key ); ?>" <?php selected( $cur_engine, $eng_key ); ?>>
+											<?php echo esc_html( $eng_label ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div class="smartrec-loc__field">
+								<label><?php esc_html_e( 'Section Title', 'smartrec' ); ?></label>
+								<input type="text"
+									   name="smartrec_loc_title[<?php echo esc_attr( $loc_key ); ?>]"
+									   value="<?php echo esc_attr( $cur_title ); ?>"
+									   placeholder="<?php esc_attr_e( 'e.g. Recommended for you', 'smartrec' ); ?>">
+							</div>
 						</div>
-
-						<div class="smartrec-location-card__field">
-							<label><?php esc_html_e( 'Title', 'smartrec' ); ?></label>
-							<input type="text"
-								   name="smartrec_loc_title[<?php echo esc_attr( $location_key ); ?>]"
-								   value="<?php echo esc_attr( $cur_title ); ?>"
-								   placeholder="<?php esc_attr_e( 'e.g. Recommended for you', 'smartrec' ); ?>">
-						</div>
-
-						<div class="smartrec-location-card__field smartrec-location-card__field--row">
-							<div>
+						<div class="smartrec-loc__fields smartrec-loc__fields--row">
+							<div class="smartrec-loc__field">
 								<label><?php esc_html_e( 'Products', 'smartrec' ); ?></label>
 								<input type="number"
-									   name="smartrec_loc_limit[<?php echo esc_attr( $location_key ); ?>]"
+									   name="smartrec_loc_limit[<?php echo esc_attr( $loc_key ); ?>]"
 									   value="<?php echo esc_attr( $cur_limit ); ?>"
 									   min="1" max="20" step="1"
 									   placeholder="<?php echo esc_attr( $this->settings->get( 'default_limit', 8 ) ); ?>"
 									   class="small-text">
 							</div>
-							<div>
+							<div class="smartrec-loc__field">
 								<label><?php esc_html_e( 'Columns', 'smartrec' ); ?></label>
 								<input type="number"
-									   name="smartrec_loc_columns[<?php echo esc_attr( $location_key ); ?>]"
+									   name="smartrec_loc_columns[<?php echo esc_attr( $loc_key ); ?>]"
 									   value="<?php echo esc_attr( $cur_columns ); ?>"
 									   min="1" max="6" step="1"
 									   placeholder="4"
 									   class="small-text">
 							</div>
-							<div>
+							<div class="smartrec-loc__field">
 								<label><?php esc_html_e( 'Layout', 'smartrec' ); ?></label>
-								<select name="smartrec_loc_layout[<?php echo esc_attr( $location_key ); ?>]">
-									<option value=""><?php esc_html_e( '— Use default —', 'smartrec' ); ?></option>
+								<select name="smartrec_loc_layout[<?php echo esc_attr( $loc_key ); ?>]">
 									<?php foreach ( $layouts as $lay_key => $lay_label ) : ?>
 										<option value="<?php echo esc_attr( $lay_key ); ?>" <?php selected( $cur_layout, $lay_key ); ?>>
 											<?php echo esc_html( $lay_label ); ?>
@@ -360,6 +397,12 @@ class SettingsPage {
 								</select>
 							</div>
 						</div>
+						<p class="smartrec-loc__hook-info">
+							<?php
+							/* translators: %s: WooCommerce hook name */
+							printf( esc_html__( 'Hook: %s', 'smartrec' ), '<code>' . esc_html( $loc_info['hook'] ) . '</code>' );
+							?>
+						</p>
 					</div>
 				</div>
 			<?php endforeach; ?>

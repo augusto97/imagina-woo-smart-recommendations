@@ -135,6 +135,11 @@ class Renderer {
 			$css .= ':root{' . implode( ';', $vars ) . '}';
 		}
 
+		// Inherit theme fonts — use the body font for all SmartRec text.
+		if ( $this->settings->get( 'inherit_theme_fonts', true ) ) {
+			$css .= '.smartrec-widget,.smartrec-widget__title,.smartrec-widget__item-title{font-family:inherit}';
+		}
+
 		// Custom CSS from admin.
 		$custom = $this->settings->get( 'custom_css', '' );
 		if ( ! empty( $custom ) ) {

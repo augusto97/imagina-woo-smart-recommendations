@@ -138,6 +138,12 @@ class AdminPage {
 			'analytics' => __( 'Analytics', 'smartrec' ),
 			'tools'     => __( 'Tools', 'smartrec' ),
 		);
+
+		// Inline CSS — guarantees styles load regardless of enqueue issues.
+		$css_file = SMARTREC_PLUGIN_DIR . 'assets/css/smartrec-admin.css';
+		if ( file_exists( $css_file ) ) {
+			echo '<style>' . file_get_contents( $css_file ) . '</style>' . "\n"; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		}
 		?>
 		<div class="wrap smartrec-admin">
 			<h1><?php esc_html_e( 'SmartRec — Intelligent Product Recommendations', 'smartrec' ); ?></h1>
@@ -174,6 +180,11 @@ class AdminPage {
 			</div>
 		</div>
 		<?php
+		// Inline JS — guarantees scripts work regardless of enqueue issues.
+		$js_file = SMARTREC_PLUGIN_DIR . 'assets/js/smartrec-admin.js';
+		if ( file_exists( $js_file ) ) {
+			echo '<script>' . file_get_contents( $js_file ) . '</script>' . "\n"; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		}
 	}
 
 	/**

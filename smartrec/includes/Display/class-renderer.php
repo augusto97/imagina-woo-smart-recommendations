@@ -93,9 +93,26 @@ class Renderer {
 	 * @return string CSS string.
 	 */
 	private function build_dynamic_css(): string {
-		$vars = array();
+		// All CSS variables with their defaults. Admin values override these.
+		$defaults = array(
+			'--smartrec-columns'     => '4',
+			'--smartrec-gap'         => '16px',
+			'--smartrec-card-padding' => '12px',
+			'--smartrec-card-radius' => '8px',
+			'--smartrec-card-shadow' => '0 1px 3px rgba(0,0,0,0.08)',
+			'--smartrec-title-size'  => '18px',
+			'--smartrec-badge-bg'    => '#f0f0f0',
+			'--smartrec-badge-color' => '#333',
+			'--smartrec-accent'      => 'var(--wc-primary,#7f54b3)',
+			'--smartrec-card-bg'     => '#fff',
+			'--smartrec-card-text'   => '#333',
+			'--smartrec-title-color' => 'inherit',
+			'--smartrec-btn-bg'      => 'var(--smartrec-accent)',
+			'--smartrec-btn-text'    => '#fff',
+		);
 
-		$map = array(
+		// Map admin settings to CSS variable names.
+		$overrides = array(
 			'style_accent_color' => '--smartrec-accent',
 			'style_card_bg'      => '--smartrec-card-bg',
 			'style_card_text'    => '--smartrec-card-text',
@@ -109,10 +126,11 @@ class Renderer {
 			'style_title_size'   => '--smartrec-title-size',
 		);
 
-		foreach ( $map as $setting => $var ) {
+		// Apply admin overrides.
+		foreach ( $overrides as $setting => $var ) {
 			$value = $this->settings->get( $setting, '' );
 			if ( ! empty( $value ) ) {
-				$vars[] = $var . ':' . $value;
+				$defaults[ $var ] = $value;
 			}
 		}
 
@@ -126,14 +144,16 @@ class Renderer {
 				'large'  => '0 4px 16px rgba(0,0,0,0.16)',
 			);
 			if ( isset( $shadow_map[ $shadow ] ) ) {
-				$vars[] = '--smartrec-card-shadow:' . $shadow_map[ $shadow ];
+				$defaults['--smartrec-card-shadow'] = $shadow_map[ $shadow ];
 			}
 		}
 
-		$css = '';
-		if ( ! empty( $vars ) ) {
-			$css .= ':root{' . implode( ';', $vars ) . '}';
+		// Build the single :root block with all variables.
+		$vars = array();
+		foreach ( $defaults as $var => $value ) {
+			$vars[] = $var . ':' . $value;
 		}
+		$css = ':root{' . implode( ';', $vars ) . '}';
 
 		// Inherit theme fonts — use the body font for all SmartRec text.
 		if ( $this->settings->get( 'inherit_theme_fonts', true ) ) {

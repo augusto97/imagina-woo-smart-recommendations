@@ -1,27 +1,12 @@
 /**
  * SmartRec Frontend Styles
  *
+ * CSS variables are set dynamically via inline styles from admin settings.
+ * Do NOT define :root defaults here — they are injected by the Renderer.
+ *
  * @package SmartRec
- * @since 1.0.0
+ * @since 1.1.0
  */
-
-/* === Custom Properties === */
-:root {
-	--smartrec-columns: 4;
-	--smartrec-gap: 16px;
-	--smartrec-card-padding: 12px;
-	--smartrec-card-radius: 8px;
-	--smartrec-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-	--smartrec-title-size: 18px;
-	--smartrec-badge-bg: #f0f0f0;
-	--smartrec-badge-color: #333;
-	--smartrec-accent: var(--wc-primary, #7f54b3);
-	--smartrec-card-bg: #fff;
-	--smartrec-card-text: #333;
-	--smartrec-title-color: inherit;
-	--smartrec-btn-bg: var(--smartrec-accent);
-	--smartrec-btn-text: #fff;
-}
 
 /* === Widget Container === */
 .smartrec-widget {
@@ -41,6 +26,23 @@
 	display: grid;
 	grid-template-columns: repeat(var(--smartrec-columns, 4), 1fr);
 	gap: var(--smartrec-gap);
+}
+
+/* === WooCommerce Template Mode === */
+.smartrec-wc-products ul.products {
+	display: grid !important;
+	grid-template-columns: repeat(var(--smartrec-columns, 4), 1fr) !important;
+	gap: var(--smartrec-gap) !important;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.smartrec-wc-products ul.products li.product {
+	width: 100% !important;
+	float: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
 }
 
 @media (max-width: 1024px) {

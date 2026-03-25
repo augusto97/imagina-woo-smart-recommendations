@@ -2,7 +2,7 @@
  * SmartRec Admin Scripts
  *
  * Handles complementary rules, confirm dialogs,
- * and settings tab switching.
+ * settings tab switching, color pickers, and location toggles.
  *
  * @package SmartRec
  * @since 1.0.0
@@ -16,42 +16,56 @@
 
 	/* === Complementary Rules === */
 
-	$(document).on('click', '.smartrec-rules__add', function (e) {
+	$(document).on('click', '#smartrec-add-rule', function (e) {
 		e.preventDefault();
-		var $container = $(this).closest('.smartrec-rules');
+		var $container = $('#smartrec-rules-container');
 		var $rows = $container.find('.smartrec-rule-row');
-		var $template = $rows.last();
-
-		if (!$template.length) {
-			return;
-		}
-
-		var $clone = $template.clone();
 		var idx = $rows.length;
 
-		/* Update name attributes with new index */
-		$clone.find('select, input').each(function () {
-			var name = $(this).attr('name') || '';
-			$(this).attr('name', name.replace(/\[\d+\]/, '[' + idx + ']'));
-			$(this).val('');
-		});
+		/* If there is an existing row, clone it */
+		if ($rows.length) {
+			var $clone = $rows.last().clone();
 
-		$clone.insertBefore($(this));
+			$clone.find('select, input').each(function () {
+				var name = $(this).attr('name') || '';
+				$(this).attr('name', name.replace(/\[\d+\]/, '[' + idx + ']'));
+				if ($(this).is('select')) {
+					$(this).prop('selectedIndex', 0);
+					/* Deselect all options in multi-select */
+					$(this).find('option').prop('selected', false);
+				} else {
+					$(this).val($(this).is('[type="number"]') ? '0.5' : '');
+				}
+			});
+
+			$container.append($clone);
+		} else {
+			/* No rows yet — build from the template data attribute */
+			var html = $container.data('template');
+			if (html) {
+				$container.append(html.replace(/__INDEX__/g, '0'));
+			}
+		}
 	});
 
-	$(document).on('click', '.smartrec-rule-row__remove', function (e) {
+	$(document).on('click', '.smartrec-remove-rule', function (e) {
 		e.preventDefault();
-		var $container = $(this).closest('.smartrec-rules');
+		var $container = $('#smartrec-rules-container');
 
 		if ($container.find('.smartrec-rule-row').length > 1) {
 			$(this).closest('.smartrec-rule-row').remove();
+		} else {
+			/* Last row — just clear values */
+			var $row = $(this).closest('.smartrec-rule-row');
+			$row.find('select').prop('selectedIndex', 0).find('option').prop('selected', false);
+			$row.find('input[type="number"]').val('0.5');
 		}
 	});
 
 	/* === Confirm Dialogs === */
 
 	$(document).on('click', '.smartrec-confirm', function (e) {
-		var msg = $(this).data('confirm') || smartrecAdmin.confirmText || 'Are you sure?';
+		var msg = $(this).data('confirm') || (typeof smartrecAdmin !== 'undefined' && smartrecAdmin.confirmText) || 'Are you sure?';
 
 		if (!window.confirm(msg)) {
 			e.preventDefault();
@@ -84,11 +98,41 @@
 		activateTab(hash);
 	});
 
-	/* Activate tab from URL hash on load */
+	/* === Location Card Toggle === */
+
+	$(document).on('change', '.smartrec-location-toggle', function () {
+		var $card = $(this).closest('.smartrec-location-card');
+		if ($(this).is(':checked')) {
+			$card.addClass('smartrec-location-card--active');
+		} else {
+			$card.removeClass('smartrec-location-card--active');
+		}
+	});
+
+	/* === Color Picker Init === */
+
+	function initColorPickers() {
+		if (typeof $.fn.wpColorPicker !== 'undefined') {
+			$('.smartrec-color-picker').each(function () {
+				if (!$(this).closest('.wp-picker-container').length) {
+					$(this).wpColorPicker({
+						change: function () {},
+						clear: function () {},
+						defaultColor: $(this).data('default-color') || ''
+					});
+				}
+			});
+		}
+	}
+
+	/* === Init on load === */
+
 	$(function () {
 		if ($('.smartrec-tabs__nav').length) {
 			activateTab(window.location.hash || '');
 		}
+
+		initColorPickers();
 	});
 
 })(jQuery);

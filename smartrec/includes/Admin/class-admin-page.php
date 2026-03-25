@@ -69,17 +69,19 @@ class AdminPage {
 			return;
 		}
 
+		wp_enqueue_style( 'wp-color-picker' );
+
 		wp_enqueue_style(
 			'smartrec-admin',
 			SMARTREC_PLUGIN_URL . 'assets/css/smartrec-admin.css',
-			array(),
+			array( 'wp-color-picker' ),
 			SMARTREC_VERSION
 		);
 
 		wp_enqueue_script(
 			'smartrec-admin',
 			SMARTREC_PLUGIN_URL . 'assets/js/smartrec-admin.js',
-			array( 'jquery' ),
+			array( 'jquery', 'wp-color-picker' ),
 			SMARTREC_VERSION,
 			true
 		);
@@ -274,47 +276,90 @@ class AdminPage {
 				'hide_empty' => false,
 			)
 		);
+
+		if ( is_wp_error( $categories ) ) {
+			$categories = array();
+		}
+
+		// Build a template row for JS to use when adding new rules.
+		$template_options = '';
+		foreach ( $categories as $cat ) {
+			$template_options .= '<option value="' . esc_attr( $cat->term_id ) . '">' . esc_html( $cat->name ) . '</option>';
+		}
+		$template_row = '<div class="smartrec-rule-row">'
+			. '<div class="smartrec-rule-row__field"><label>' . esc_html__( 'Source category', 'smartrec' ) . '</label>'
+			. '<select name="smartrec_rules[__INDEX__][source_category]">' . $template_options . '</select></div>'
+			. '<span class="smartrec-rule-row__arrow">&rarr;</span>'
+			. '<div class="smartrec-rule-row__field smartrec-rule-row__field--wide"><label>' . esc_html__( 'Complementary categories', 'smartrec' ) . '</label>'
+			. '<select name="smartrec_rules[__INDEX__][complementary_categories][]" multiple size="4">' . $template_options . '</select>'
+			. '<p class="description">' . esc_html__( 'Hold Ctrl/Cmd to select multiple.', 'smartrec' ) . '</p></div>'
+			. '<div class="smartrec-rule-row__field"><label>' . esc_html__( 'Weight', 'smartrec' ) . '</label>'
+			. '<input type="number" name="smartrec_rules[__INDEX__][weight]" value="0.5" min="0.1" max="1.0" step="0.1" class="small-text"></div>'
+			. '<button type="button" class="button smartrec-remove-rule" title="' . esc_attr__( 'Remove rule', 'smartrec' ) . '">&times;</button>'
+			. '</div>';
 		?>
 		<div class="smartrec-rules">
 			<h2><?php esc_html_e( 'Complementary Category Rules', 'smartrec' ); ?></h2>
-			<p><?php esc_html_e( 'Define which product categories complement each other for cross-sell recommendations.', 'smartrec' ); ?></p>
+			<p><?php esc_html_e( 'Define which product categories complement each other for cross-sell recommendations. For example: "Laptops" → "Laptop Bags, Mouse, Keyboards".', 'smartrec' ); ?></p>
 
-			<form method="post">
-				<?php wp_nonce_field( 'smartrec_settings', 'smartrec_nonce' ); ?>
-				<input type="hidden" name="smartrec_save_settings" value="rules">
-
-				<div id="smartrec-rules-container">
-					<?php if ( ! empty( $rules ) ) : ?>
-						<?php foreach ( $rules as $index => $rule ) : ?>
-							<div class="smartrec-rule-row">
-								<select name="smartrec_rules[<?php echo esc_attr( $index ); ?>][source_category]">
-									<?php foreach ( $categories as $cat ) : ?>
-										<option value="<?php echo esc_attr( $cat->term_id ); ?>" <?php selected( $rule['source_category'] ?? '', $cat->term_id ); ?>>
-											<?php echo esc_html( $cat->name ); ?>
-										</option>
-									<?php endforeach; ?>
-								</select>
-								<span>&rarr;</span>
-								<select name="smartrec_rules[<?php echo esc_attr( $index ); ?>][complementary_categories][]" multiple>
-									<?php foreach ( $categories as $cat ) : ?>
-										<option value="<?php echo esc_attr( $cat->term_id ); ?>" <?php echo in_array( $cat->term_id, $rule['complementary_categories'] ?? array() ) ? 'selected' : ''; ?>>
-											<?php echo esc_html( $cat->name ); ?>
-										</option>
-									<?php endforeach; ?>
-								</select>
-								<input type="number" name="smartrec_rules[<?php echo esc_attr( $index ); ?>][weight]" value="<?php echo esc_attr( $rule['weight'] ?? 0.5 ); ?>" min="0.1" max="1.0" step="0.1">
-								<button type="button" class="button smartrec-remove-rule">&times;</button>
-							</div>
-						<?php endforeach; ?>
-					<?php endif; ?>
+			<?php if ( empty( $categories ) ) : ?>
+				<div class="notice notice-warning inline">
+					<p><?php esc_html_e( 'No product categories found. Please create WooCommerce product categories first.', 'smartrec' ); ?></p>
 				</div>
+			<?php else : ?>
+				<form method="post">
+					<?php wp_nonce_field( 'smartrec_settings', 'smartrec_nonce' ); ?>
+					<input type="hidden" name="smartrec_save_settings" value="rules">
 
-				<p>
-					<button type="button" class="button" id="smartrec-add-rule"><?php esc_html_e( 'Add Rule', 'smartrec' ); ?></button>
-				</p>
+					<div id="smartrec-rules-container" data-template="<?php echo esc_attr( $template_row ); ?>">
+						<?php if ( ! empty( $rules ) ) : ?>
+							<?php foreach ( $rules as $index => $rule ) : ?>
+								<div class="smartrec-rule-row">
+									<div class="smartrec-rule-row__field">
+										<label><?php esc_html_e( 'Source category', 'smartrec' ); ?></label>
+										<select name="smartrec_rules[<?php echo esc_attr( $index ); ?>][source_category]">
+											<?php foreach ( $categories as $cat ) : ?>
+												<option value="<?php echo esc_attr( $cat->term_id ); ?>" <?php selected( $rule['source_category'] ?? '', $cat->term_id ); ?>>
+													<?php echo esc_html( $cat->name ); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+									</div>
+									<span class="smartrec-rule-row__arrow">&rarr;</span>
+									<div class="smartrec-rule-row__field smartrec-rule-row__field--wide">
+										<label><?php esc_html_e( 'Complementary categories', 'smartrec' ); ?></label>
+										<select name="smartrec_rules[<?php echo esc_attr( $index ); ?>][complementary_categories][]" multiple size="4">
+											<?php foreach ( $categories as $cat ) : ?>
+												<option value="<?php echo esc_attr( $cat->term_id ); ?>" <?php echo in_array( (int) $cat->term_id, array_map( 'intval', $rule['complementary_categories'] ?? array() ), true ) ? 'selected' : ''; ?>>
+													<?php echo esc_html( $cat->name ); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+										<p class="description"><?php esc_html_e( 'Hold Ctrl/Cmd to select multiple.', 'smartrec' ); ?></p>
+									</div>
+									<div class="smartrec-rule-row__field">
+										<label><?php esc_html_e( 'Weight', 'smartrec' ); ?></label>
+										<input type="number" name="smartrec_rules[<?php echo esc_attr( $index ); ?>][weight]" value="<?php echo esc_attr( $rule['weight'] ?? 0.5 ); ?>" min="0.1" max="1.0" step="0.1" class="small-text">
+									</div>
+									<button type="button" class="button smartrec-remove-rule" title="<?php esc_attr_e( 'Remove rule', 'smartrec' ); ?>">&times;</button>
+								</div>
+							<?php endforeach; ?>
+						<?php else : ?>
+							<div class="smartrec-rules__empty">
+								<p><?php esc_html_e( 'No rules defined yet. Click "Add Rule" to create your first complementary category rule.', 'smartrec' ); ?></p>
+							</div>
+						<?php endif; ?>
+					</div>
 
-				<?php submit_button( __( 'Save Rules', 'smartrec' ) ); ?>
-			</form>
+					<p>
+						<button type="button" class="button button-secondary" id="smartrec-add-rule">
+							+ <?php esc_html_e( 'Add Rule', 'smartrec' ); ?>
+						</button>
+					</p>
+
+					<?php submit_button( __( 'Save Rules', 'smartrec' ) ); ?>
+				</form>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -368,7 +413,7 @@ class AdminPage {
 			return;
 		}
 
-		// General settings.
+		// Simple settings (bool, int, string).
 		$settings_map = array(
 			'enabled'              => 'bool',
 			'default_limit'        => 'int',
@@ -399,10 +444,11 @@ class AdminPage {
 			'location_single_product_below' => 'bool',
 			'location_single_product_tabs'  => 'bool',
 			'location_cart_page'            => 'bool',
+			'location_cart_page_cross_sells' => 'bool',
+			'location_checkout_page'        => 'bool',
 			'location_category_page'        => 'bool',
 			'location_empty_cart'           => 'bool',
 			'location_thank_you_page'       => 'bool',
-			'location_checkout_page'        => 'bool',
 			'location_my_account'           => 'bool',
 		);
 
@@ -415,6 +461,70 @@ class AdminPage {
 				$this->settings->set( $key, sanitize_text_field( wp_unslash( $_POST[ 'smartrec_' . $key ] ?? '' ) ) );
 			}
 		}
+
+		// Per-location settings (engine, title, limit, layout, columns).
+		$location_keys = array(
+			'single_product_below', 'single_product_tabs', 'cart_page',
+			'cart_page_cross_sells', 'checkout_page', 'category_page',
+			'empty_cart', 'thank_you_page', 'my_account',
+		);
+
+		$valid_engines = array(
+			'personalized_mix', 'similar', 'bought_together', 'viewed_together',
+			'recently_viewed', 'trending', 'complementary',
+		);
+		$valid_layouts = array( '', 'grid', 'slider', 'list', 'minimal' );
+
+		$loc_engines  = array();
+		$loc_titles   = array();
+		$loc_limits   = array();
+		$loc_layouts  = array();
+		$loc_columns  = array();
+
+		foreach ( $location_keys as $loc ) {
+			// phpcs:disable WordPress.Security.ValidatedSanitizedInput
+			$engine  = isset( $_POST['smartrec_loc_engine'][ $loc ] ) ? sanitize_text_field( wp_unslash( $_POST['smartrec_loc_engine'][ $loc ] ) ) : '';
+			$title   = isset( $_POST['smartrec_loc_title'][ $loc ] ) ? sanitize_text_field( wp_unslash( $_POST['smartrec_loc_title'][ $loc ] ) ) : '';
+			$limit   = isset( $_POST['smartrec_loc_limit'][ $loc ] ) ? absint( $_POST['smartrec_loc_limit'][ $loc ] ) : 0;
+			$layout  = isset( $_POST['smartrec_loc_layout'][ $loc ] ) ? sanitize_text_field( wp_unslash( $_POST['smartrec_loc_layout'][ $loc ] ) ) : '';
+			$columns = isset( $_POST['smartrec_loc_columns'][ $loc ] ) ? absint( $_POST['smartrec_loc_columns'][ $loc ] ) : 0;
+			// phpcs:enable
+
+			$loc_engines[ $loc ] = in_array( $engine, $valid_engines, true ) ? $engine : 'personalized_mix';
+			$loc_titles[ $loc ]  = $title;
+			if ( $limit > 0 && $limit <= 20 ) {
+				$loc_limits[ $loc ] = $limit;
+			}
+			if ( in_array( $layout, $valid_layouts, true ) ) {
+				$loc_layouts[ $loc ] = $layout;
+			}
+			if ( $columns > 0 && $columns <= 6 ) {
+				$loc_columns[ $loc ] = $columns;
+			}
+		}
+
+		$this->settings->set( 'location_engines', $loc_engines );
+		$this->settings->set( 'location_titles', $loc_titles );
+		$this->settings->set( 'location_limits', $loc_limits );
+		$this->settings->set( 'location_layouts', $loc_layouts );
+		$this->settings->set( 'location_columns', $loc_columns );
+
+		// Appearance / style settings.
+		$style_fields = array(
+			'style_accent_color', 'style_card_bg', 'style_card_text',
+			'style_title_color', 'style_badge_bg', 'style_badge_text',
+			'style_btn_bg', 'style_btn_text', 'style_card_radius',
+			'style_card_shadow', 'style_gap', 'style_title_size',
+		);
+
+		foreach ( $style_fields as $field ) {
+			$value = isset( $_POST[ 'smartrec_' . $field ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'smartrec_' . $field ] ) ) : '';
+			$this->settings->set( $field, $value );
+		}
+
+		// Custom CSS - use wp_strip_all_tags to remove any HTML but keep CSS.
+		$custom_css = isset( $_POST['smartrec_custom_css'] ) ? wp_strip_all_tags( wp_unslash( $_POST['smartrec_custom_css'] ) ) : '';
+		$this->settings->set( 'custom_css', $custom_css );
 
 		add_action(
 			'admin_notices',

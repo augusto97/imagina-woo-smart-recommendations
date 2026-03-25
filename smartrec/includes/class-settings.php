@@ -197,6 +197,21 @@ class Settings {
 			'rest_api_public'           => true,
 			'delete_data_on_uninstall'  => false,
 
+			// Appearance / styling.
+			'style_accent_color'        => '',
+			'style_card_bg'             => '',
+			'style_card_text'           => '',
+			'style_title_color'         => '',
+			'style_badge_bg'            => '',
+			'style_badge_text'          => '',
+			'style_btn_bg'              => '',
+			'style_btn_text'            => '',
+			'style_card_radius'         => '',
+			'style_card_shadow'         => '',
+			'style_gap'                 => '',
+			'style_title_size'          => '',
+			'custom_css'                => '',
+
 			// Complementary rules.
 			'complementary_rules'       => array(),
 
@@ -225,6 +240,15 @@ class Settings {
 				'thank_you_page'        => 'Customers also bought',
 				'my_account'            => 'Recommended for you',
 			),
+
+			// Per-location limits.
+			'location_limits'           => array(),
+
+			// Per-location layouts.
+			'location_layouts'          => array(),
+
+			// Per-location columns.
+			'location_columns'          => array(),
 		);
 	}
 
@@ -235,15 +259,22 @@ class Settings {
 	 * @return array
 	 */
 	public function get_location_settings( $location ) {
-		$engines = $this->get( 'location_engines' );
-		$titles  = $this->get( 'location_titles' );
+		$engines  = $this->get( 'location_engines' );
+		$titles   = $this->get( 'location_titles' );
+		$limits   = $this->get( 'location_limits' );
+		$layouts  = $this->get( 'location_layouts' );
+		$columns  = $this->get( 'location_columns' );
+
+		$default_limit = (int) $this->get( 'default_limit', 8 );
+		$default_layout = $this->get( 'default_layout', 'grid' );
 
 		return array(
 			'enabled' => $this->get( 'location_' . $location, false ),
 			'engine'  => $engines[ $location ] ?? 'personalized_mix',
 			'title'   => $titles[ $location ] ?? __( 'Recommended products', 'smartrec' ),
-			'limit'   => $this->get( 'default_limit', 8 ),
-			'layout'  => $this->get( 'default_layout', 'grid' ),
+			'limit'   => ! empty( $limits[ $location ] ) ? (int) $limits[ $location ] : $default_limit,
+			'layout'  => ! empty( $layouts[ $location ] ) ? $layouts[ $location ] : $default_layout,
+			'columns' => ! empty( $columns[ $location ] ) ? (int) $columns[ $location ] : 4,
 		);
 	}
 

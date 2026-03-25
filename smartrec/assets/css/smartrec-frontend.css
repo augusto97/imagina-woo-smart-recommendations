@@ -16,6 +16,11 @@
 	--smartrec-badge-bg: #f0f0f0;
 	--smartrec-badge-color: #333;
 	--smartrec-accent: var(--wc-primary, #7f54b3);
+	--smartrec-card-bg: #fff;
+	--smartrec-card-text: #333;
+	--smartrec-title-color: inherit;
+	--smartrec-btn-bg: var(--smartrec-accent);
+	--smartrec-btn-text: #fff;
 }
 
 /* === Widget Container === */
@@ -28,6 +33,7 @@
 	margin-block-end: 1em;
 	font-weight: 600;
 	line-height: 1.3;
+	color: var(--smartrec-title-color);
 }
 
 /* === Grid Layout === */
@@ -57,7 +63,8 @@
 
 /* === Card / Item === */
 .smartrec-widget__item {
-	background: #fff;
+	background: var(--smartrec-card-bg);
+	color: var(--smartrec-card-text);
 	border-radius: var(--smartrec-card-radius);
 	box-shadow: var(--smartrec-card-shadow);
 	padding: var(--smartrec-card-padding);
@@ -138,8 +145,8 @@
 	font-size: 13px;
 	padding: 6px 14px;
 	border-radius: 4px;
-	background: var(--smartrec-accent);
-	color: #fff;
+	background: var(--smartrec-btn-bg);
+	color: var(--smartrec-btn-text);
 	border: none;
 	cursor: pointer;
 	text-decoration: none;

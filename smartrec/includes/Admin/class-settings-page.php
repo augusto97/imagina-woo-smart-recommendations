@@ -49,6 +49,7 @@ class SettingsPage {
 			<?php $this->render_tracking_section(); ?>
 			<?php $this->render_engines_section(); ?>
 			<?php $this->render_locations_section(); ?>
+			<?php $this->render_appearance_section(); ?>
 			<?php $this->render_cache_section(); ?>
 			<?php $this->render_advanced_section(); ?>
 
@@ -212,33 +213,349 @@ class SettingsPage {
 	 */
 	private function render_locations_section() {
 		$locations = array(
-			'single_product_below' => __( 'Below Single Product', 'smartrec' ),
-			'single_product_tabs'  => __( 'Single Product Tab', 'smartrec' ),
-			'cart_page'            => __( 'Cart Page', 'smartrec' ),
-			'category_page'        => __( 'Category Page', 'smartrec' ),
-			'empty_cart'           => __( 'Empty Cart', 'smartrec' ),
-			'thank_you_page'       => __( 'Thank You Page', 'smartrec' ),
-			'checkout_page'        => __( 'Checkout Page', 'smartrec' ),
-			'my_account'           => __( 'My Account', 'smartrec' ),
+			'single_product_below' => array(
+				'label' => __( 'Below Single Product', 'smartrec' ),
+				'desc'  => __( 'Shows after the product summary on single product pages.', 'smartrec' ),
+				'hook'  => 'woocommerce_after_single_product_summary',
+			),
+			'single_product_tabs'  => array(
+				'label' => __( 'Product Tab "Recommended"', 'smartrec' ),
+				'desc'  => __( 'Adds a new tab in the product data tabs section.', 'smartrec' ),
+				'hook'  => 'woocommerce_product_tabs',
+			),
+			'cart_page'            => array(
+				'label' => __( 'Cart Page', 'smartrec' ),
+				'desc'  => __( 'Shows below the cart table.', 'smartrec' ),
+				'hook'  => 'woocommerce_after_cart_table',
+			),
+			'cart_page_cross_sells' => array(
+				'label' => __( 'Cart Cross-Sells (replace WC)', 'smartrec' ),
+				'desc'  => __( 'Replaces WooCommerce native cross-sells on the cart page.', 'smartrec' ),
+				'hook'  => 'woocommerce_cross_sell_display',
+			),
+			'checkout_page'        => array(
+				'label' => __( 'Checkout Page', 'smartrec' ),
+				'desc'  => __( 'Shows after the checkout form.', 'smartrec' ),
+				'hook'  => 'woocommerce_after_checkout_form',
+			),
+			'category_page'        => array(
+				'label' => __( 'Category / Archive Page', 'smartrec' ),
+				'desc'  => __( 'Shows after the product loop on category pages.', 'smartrec' ),
+				'hook'  => 'woocommerce_after_shop_loop',
+			),
+			'empty_cart'           => array(
+				'label' => __( 'Empty Cart', 'smartrec' ),
+				'desc'  => __( 'Shows when the cart is empty.', 'smartrec' ),
+				'hook'  => 'woocommerce_cart_is_empty',
+			),
+			'thank_you_page'       => array(
+				'label' => __( 'Thank You Page', 'smartrec' ),
+				'desc'  => __( 'Shows on the order confirmation page.', 'smartrec' ),
+				'hook'  => 'woocommerce_thankyou',
+			),
+			'my_account'           => array(
+				'label' => __( 'My Account Dashboard', 'smartrec' ),
+				'desc'  => __( 'Shows on the customer account dashboard.', 'smartrec' ),
+				'hook'  => 'woocommerce_account_dashboard',
+			),
 		);
+
+		$engines = array(
+			'personalized_mix' => __( 'Personalized Mix (smart default)', 'smartrec' ),
+			'similar'          => __( 'Similar Products', 'smartrec' ),
+			'bought_together'  => __( 'Bought Together', 'smartrec' ),
+			'viewed_together'  => __( 'Viewed Together', 'smartrec' ),
+			'recently_viewed'  => __( 'Recently Viewed', 'smartrec' ),
+			'trending'         => __( 'Trending Products', 'smartrec' ),
+			'complementary'    => __( 'Complementary Products', 'smartrec' ),
+		);
+
+		$layouts = array(
+			'grid'    => __( 'Grid', 'smartrec' ),
+			'slider'  => __( 'Slider / Carousel', 'smartrec' ),
+			'list'    => __( 'List', 'smartrec' ),
+			'minimal' => __( 'Minimal', 'smartrec' ),
+		);
+
+		$location_engines = $this->settings->get( 'location_engines', array() );
+		$location_titles  = $this->settings->get( 'location_titles', array() );
+		$location_limits  = $this->settings->get( 'location_limits', array() );
+		$location_layouts = $this->settings->get( 'location_layouts', array() );
+		$location_columns = $this->settings->get( 'location_columns', array() );
 		?>
 		<h2><?php esc_html_e( 'Display Locations', 'smartrec' ); ?></h2>
-		<table class="form-table" role="presentation">
-			<?php foreach ( $locations as $location_key => $location_label ) : ?>
-				<tr>
-					<th scope="row"><?php echo esc_html( $location_label ); ?></th>
-					<td>
-						<label>
+		<p class="description"><?php esc_html_e( 'Configure where recommendations appear and how they look in each position. Each location can use a different engine, layout, and number of products.', 'smartrec' ); ?></p>
+
+		<div class="smartrec-locations-grid">
+			<?php foreach ( $locations as $location_key => $location_info ) :
+				$is_enabled   = $this->settings->get( 'location_' . $location_key, false );
+				$cur_engine   = $location_engines[ $location_key ] ?? 'personalized_mix';
+				$cur_title    = $location_titles[ $location_key ] ?? '';
+				$cur_limit    = $location_limits[ $location_key ] ?? '';
+				$cur_layout   = $location_layouts[ $location_key ] ?? '';
+				$cur_columns  = $location_columns[ $location_key ] ?? '';
+				?>
+				<div class="smartrec-location-card <?php echo $is_enabled ? 'smartrec-location-card--active' : ''; ?>">
+					<div class="smartrec-location-card__header">
+						<label class="smartrec-location-card__toggle">
 							<input type="checkbox"
 								   name="smartrec_location_<?php echo esc_attr( $location_key ); ?>"
 								   value="1"
-								   <?php checked( $this->settings->get( 'location_' . $location_key, false ) ); ?>>
-							<?php esc_html_e( 'Enable', 'smartrec' ); ?>
+								   class="smartrec-location-toggle"
+								   <?php checked( $is_enabled ); ?>>
+							<strong><?php echo esc_html( $location_info['label'] ); ?></strong>
 						</label>
-					</td>
-				</tr>
+						<code class="smartrec-location-card__hook"><?php echo esc_html( $location_info['hook'] ); ?></code>
+					</div>
+					<p class="smartrec-location-card__desc"><?php echo esc_html( $location_info['desc'] ); ?></p>
+
+					<div class="smartrec-location-card__fields">
+						<div class="smartrec-location-card__field">
+							<label><?php esc_html_e( 'Engine', 'smartrec' ); ?></label>
+							<select name="smartrec_loc_engine[<?php echo esc_attr( $location_key ); ?>]">
+								<?php foreach ( $engines as $eng_key => $eng_label ) : ?>
+									<option value="<?php echo esc_attr( $eng_key ); ?>" <?php selected( $cur_engine, $eng_key ); ?>>
+										<?php echo esc_html( $eng_label ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+
+						<div class="smartrec-location-card__field">
+							<label><?php esc_html_e( 'Title', 'smartrec' ); ?></label>
+							<input type="text"
+								   name="smartrec_loc_title[<?php echo esc_attr( $location_key ); ?>]"
+								   value="<?php echo esc_attr( $cur_title ); ?>"
+								   placeholder="<?php esc_attr_e( 'e.g. Recommended for you', 'smartrec' ); ?>">
+						</div>
+
+						<div class="smartrec-location-card__field smartrec-location-card__field--row">
+							<div>
+								<label><?php esc_html_e( 'Products', 'smartrec' ); ?></label>
+								<input type="number"
+									   name="smartrec_loc_limit[<?php echo esc_attr( $location_key ); ?>]"
+									   value="<?php echo esc_attr( $cur_limit ); ?>"
+									   min="1" max="20" step="1"
+									   placeholder="<?php echo esc_attr( $this->settings->get( 'default_limit', 8 ) ); ?>"
+									   class="small-text">
+							</div>
+							<div>
+								<label><?php esc_html_e( 'Columns', 'smartrec' ); ?></label>
+								<input type="number"
+									   name="smartrec_loc_columns[<?php echo esc_attr( $location_key ); ?>]"
+									   value="<?php echo esc_attr( $cur_columns ); ?>"
+									   min="1" max="6" step="1"
+									   placeholder="4"
+									   class="small-text">
+							</div>
+							<div>
+								<label><?php esc_html_e( 'Layout', 'smartrec' ); ?></label>
+								<select name="smartrec_loc_layout[<?php echo esc_attr( $location_key ); ?>]">
+									<option value=""><?php esc_html_e( '— Use default —', 'smartrec' ); ?></option>
+									<?php foreach ( $layouts as $lay_key => $lay_label ) : ?>
+										<option value="<?php echo esc_attr( $lay_key ); ?>" <?php selected( $cur_layout, $lay_key ); ?>>
+											<?php echo esc_html( $lay_label ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
 			<?php endforeach; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Appearance settings section.
+	 *
+	 * @return void
+	 */
+	private function render_appearance_section() {
+		?>
+		<h2><?php esc_html_e( 'Appearance & Styling', 'smartrec' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Customize colors and styling to match your theme. Leave blank to use defaults.', 'smartrec' ); ?></p>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_accent_color"><?php esc_html_e( 'Accent Color', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_accent_color"
+						   name="smartrec_style_accent_color"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_accent_color', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#7f54b3"
+						   placeholder="#7f54b3">
+					<p class="description"><?php esc_html_e( 'Used for buttons and price. Defaults to WooCommerce primary color.', 'smartrec' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_card_bg"><?php esc_html_e( 'Card Background', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_card_bg"
+						   name="smartrec_style_card_bg"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_card_bg', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#ffffff"
+						   placeholder="#ffffff">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_card_text"><?php esc_html_e( 'Card Text Color', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_card_text"
+						   name="smartrec_style_card_text"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_card_text', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#333333"
+						   placeholder="#333333">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_title_color"><?php esc_html_e( 'Widget Title Color', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_title_color"
+						   name="smartrec_style_title_color"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_title_color', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#1d2327"
+						   placeholder="#1d2327">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_badge_bg"><?php esc_html_e( 'Badge Background', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_badge_bg"
+						   name="smartrec_style_badge_bg"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_badge_bg', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#f0f0f0"
+						   placeholder="#f0f0f0">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_badge_text"><?php esc_html_e( 'Badge Text Color', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_badge_text"
+						   name="smartrec_style_badge_text"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_badge_text', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#333333"
+						   placeholder="#333333">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_btn_bg"><?php esc_html_e( 'Button Background', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_btn_bg"
+						   name="smartrec_style_btn_bg"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_btn_bg', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#7f54b3"
+						   placeholder="#7f54b3">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_btn_text"><?php esc_html_e( 'Button Text Color', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_btn_text"
+						   name="smartrec_style_btn_text"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_btn_text', '' ) ); ?>"
+						   class="smartrec-color-picker"
+						   data-default-color="#ffffff"
+						   placeholder="#ffffff">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_card_radius"><?php esc_html_e( 'Card Border Radius', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_card_radius"
+						   name="smartrec_style_card_radius"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_card_radius', '' ) ); ?>"
+						   placeholder="8px"
+						   class="small-text">
+					<p class="description"><?php esc_html_e( 'CSS value, e.g. 8px, 0, 12px.', 'smartrec' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_card_shadow"><?php esc_html_e( 'Card Shadow', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<select id="smartrec_style_card_shadow" name="smartrec_style_card_shadow">
+						<option value="" <?php selected( $this->settings->get( 'style_card_shadow', '' ), '' ); ?>><?php esc_html_e( 'Default (subtle)', 'smartrec' ); ?></option>
+						<option value="none" <?php selected( $this->settings->get( 'style_card_shadow', '' ), 'none' ); ?>><?php esc_html_e( 'None', 'smartrec' ); ?></option>
+						<option value="small" <?php selected( $this->settings->get( 'style_card_shadow', '' ), 'small' ); ?>><?php esc_html_e( 'Small', 'smartrec' ); ?></option>
+						<option value="medium" <?php selected( $this->settings->get( 'style_card_shadow', '' ), 'medium' ); ?>><?php esc_html_e( 'Medium', 'smartrec' ); ?></option>
+						<option value="large" <?php selected( $this->settings->get( 'style_card_shadow', '' ), 'large' ); ?>><?php esc_html_e( 'Large', 'smartrec' ); ?></option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_gap"><?php esc_html_e( 'Grid Gap', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_gap"
+						   name="smartrec_style_gap"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_gap', '' ) ); ?>"
+						   placeholder="16px"
+						   class="small-text">
+					<p class="description"><?php esc_html_e( 'Space between product cards. CSS value, e.g. 16px, 1rem, 20px.', 'smartrec' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="smartrec_style_title_size"><?php esc_html_e( 'Widget Title Font Size', 'smartrec' ); ?></label>
+				</th>
+				<td>
+					<input type="text"
+						   id="smartrec_style_title_size"
+						   name="smartrec_style_title_size"
+						   value="<?php echo esc_attr( $this->settings->get( 'style_title_size', '' ) ); ?>"
+						   placeholder="18px"
+						   class="small-text">
+				</td>
+			</tr>
 		</table>
+
+		<h3><?php esc_html_e( 'Custom CSS', 'smartrec' ); ?></h3>
+		<p class="description"><?php esc_html_e( 'Add custom CSS rules. These will be scoped to .smartrec-widget elements. Use this to fine-tune the appearance to match your theme.', 'smartrec' ); ?></p>
+		<textarea id="smartrec_custom_css"
+				  name="smartrec_custom_css"
+				  rows="10"
+				  class="large-text code"
+				  placeholder="<?php esc_attr_e( "/* Example: */\n.smartrec-widget__item-title {\n    font-family: inherit;\n    font-size: 15px;\n}\n.smartrec-widget__item-btn {\n    border-radius: 4px;\n}", 'smartrec' ); ?>"
+		><?php echo esc_textarea( $this->settings->get( 'custom_css', '' ) ); ?></textarea>
 		<?php
 	}
 

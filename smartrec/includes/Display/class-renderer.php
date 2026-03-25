@@ -61,6 +61,12 @@ class Renderer {
 			SMARTREC_VERSION
 		);
 
+		// Add dynamic inline styles from admin customization.
+		$inline_css = $this->build_dynamic_css();
+		if ( ! empty( $inline_css ) ) {
+			wp_add_inline_style( 'smartrec-frontend', $inline_css );
+		}
+
 		if ( $this->settings->get( 'ajax_loading', false ) ) {
 			wp_enqueue_script(
 				'smartrec-display',
@@ -82,6 +88,63 @@ class Renderer {
 	}
 
 	/**
+	 * Build dynamic CSS from admin style settings.
+	 *
+	 * @return string CSS string.
+	 */
+	private function build_dynamic_css(): string {
+		$vars = array();
+
+		$map = array(
+			'style_accent_color' => '--smartrec-accent',
+			'style_card_bg'      => '--smartrec-card-bg',
+			'style_card_text'    => '--smartrec-card-text',
+			'style_title_color'  => '--smartrec-title-color',
+			'style_badge_bg'     => '--smartrec-badge-bg',
+			'style_badge_text'   => '--smartrec-badge-color',
+			'style_btn_bg'       => '--smartrec-btn-bg',
+			'style_btn_text'     => '--smartrec-btn-text',
+			'style_card_radius'  => '--smartrec-card-radius',
+			'style_gap'          => '--smartrec-gap',
+			'style_title_size'   => '--smartrec-title-size',
+		);
+
+		foreach ( $map as $setting => $var ) {
+			$value = $this->settings->get( $setting, '' );
+			if ( ! empty( $value ) ) {
+				$vars[] = $var . ':' . $value;
+			}
+		}
+
+		// Shadow presets.
+		$shadow = $this->settings->get( 'style_card_shadow', '' );
+		if ( ! empty( $shadow ) ) {
+			$shadow_map = array(
+				'none'   => 'none',
+				'small'  => '0 1px 2px rgba(0,0,0,0.06)',
+				'medium' => '0 2px 8px rgba(0,0,0,0.12)',
+				'large'  => '0 4px 16px rgba(0,0,0,0.16)',
+			);
+			if ( isset( $shadow_map[ $shadow ] ) ) {
+				$vars[] = '--smartrec-card-shadow:' . $shadow_map[ $shadow ];
+			}
+		}
+
+		$css = '';
+		if ( ! empty( $vars ) ) {
+			$css .= ':root{' . implode( ';', $vars ) . '}';
+		}
+
+		// Custom CSS from admin.
+		$custom = $this->settings->get( 'custom_css', '' );
+		if ( ! empty( $custom ) ) {
+			$css .= "\n" . $custom;
+		}
+
+		return $css;
+	}
+
+	/**
 	 * Render recommendations for a location.
 	 *
 	 * @param string $location  Location ID.
@@ -99,7 +162,7 @@ class Renderer {
 				'layout'        => $location_settings['layout'],
 				'title'         => $location_settings['title'],
 				'engine'        => $location_settings['engine'],
-				'columns'       => 4,
+				'columns'       => $location_settings['columns'] ?? 4,
 				'show_price'    => $this->settings->get( 'show_price', true ),
 				'show_rating'   => $this->settings->get( 'show_rating', true ),
 				'show_add_to_cart' => $this->settings->get( 'show_add_to_cart', true ),

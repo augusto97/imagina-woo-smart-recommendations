@@ -139,6 +139,109 @@
 	width: 220px;
 }
 
+/* === Display Location Cards === */
+.smartrec-locations-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+	gap: 16px;
+	margin: 16px 0 24px;
+}
+
+@media (max-width: 850px) {
+	.smartrec-locations-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.smartrec-location-card {
+	background: #fff;
+	border: 2px solid #dcdcde;
+	border-radius: 6px;
+	padding: 16px;
+	transition: border-color 0.2s, box-shadow 0.2s;
+	opacity: 0.7;
+}
+
+.smartrec-location-card--active {
+	border-color: #2271b1;
+	opacity: 1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.smartrec-location-card__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.smartrec-location-card__toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	cursor: pointer;
+}
+
+.smartrec-location-card__toggle strong {
+	font-size: 14px;
+}
+
+.smartrec-location-card__hook {
+	font-size: 11px;
+	color: #8c8f94;
+	background: #f6f7f7;
+	padding: 2px 6px;
+	border-radius: 3px;
+}
+
+.smartrec-location-card__desc {
+	font-size: 12px;
+	color: #646970;
+	margin: 0 0 12px;
+}
+
+.smartrec-location-card__fields {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.smartrec-location-card__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.smartrec-location-card__field label {
+	font-size: 12px;
+	font-weight: 500;
+	color: #50575e;
+}
+
+.smartrec-location-card__field select,
+.smartrec-location-card__field input[type="text"] {
+	width: 100%;
+}
+
+.smartrec-location-card__field--row {
+	flex-direction: row;
+	gap: 12px;
+}
+
+.smartrec-location-card__field--row > div {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.smartrec-location-card__field--row > div label {
+	font-size: 12px;
+	font-weight: 500;
+	color: #50575e;
+}
+
 /* === Complementary Rules === */
 .smartrec-rules {
 	margin-bottom: 16px;
@@ -146,42 +249,78 @@
 
 .smartrec-rule-row {
 	display: flex;
-	align-items: center;
+	align-items: flex-end;
 	gap: 12px;
-	padding: 10px 0;
-	border-bottom: 1px solid #f0f0f0;
+	padding: 14px 16px;
+	margin-bottom: 8px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
 }
 
-.smartrec-rule-row:last-child {
-	border-bottom: none;
+.smartrec-rule-row__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
-.smartrec-rule-row select {
-	min-width: 180px;
+.smartrec-rule-row__field label {
+	font-size: 12px;
+	font-weight: 500;
+	color: #50575e;
 }
 
-.smartrec-rule-row .smartrec-rule-row__weight {
-	width: 70px;
+.smartrec-rule-row__field--wide {
+	flex: 1;
+}
+
+.smartrec-rule-row__field select {
+	min-width: 160px;
+}
+
+.smartrec-rule-row__field .description {
+	font-size: 11px;
+	color: #8c8f94;
+	margin: 2px 0 0;
 }
 
 .smartrec-rule-row__arrow {
 	color: #646970;
-	font-size: 18px;
+	font-size: 20px;
+	font-weight: bold;
 	flex-shrink: 0;
+	padding-bottom: 6px;
 }
 
-.smartrec-rule-row__remove {
-	color: #b32d2e;
-	cursor: pointer;
+.smartrec-remove-rule {
 	flex-shrink: 0;
+	color: #b32d2e !important;
+	border-color: #b32d2e !important;
 }
 
-.smartrec-rule-row__remove:hover {
-	color: #a00;
+.smartrec-remove-rule:hover {
+	background: #fcecec !important;
 }
 
-.smartrec-rules__add {
+.smartrec-rules__empty {
+	background: #f6f7f7;
+	padding: 20px;
+	text-align: center;
+	border-radius: 4px;
+	color: #646970;
+}
+
+#smartrec-add-rule {
 	margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+	.smartrec-rule-row {
+		flex-wrap: wrap;
+	}
+	.smartrec-rule-row__field select {
+		min-width: 100%;
+	}
 }
 
 /* === Tools Actions === */

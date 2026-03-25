@@ -367,35 +367,16 @@
 	}
 }
 
-/* === Dark Mode === */
+/*
+ * Dark Mode: no hardcoded colors here — all colors come from CSS
+ * variables set by the Renderer. If the admin doesn't configure
+ * dark-specific colors, the defaults from :root apply. Skeleton
+ * loaders use neutral dark values since they're not configurable.
+ */
 @media (prefers-color-scheme: dark) {
-	:root {
-		--smartrec-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-		--smartrec-badge-bg: #333;
-		--smartrec-badge-color: #ddd;
-	}
-
-	.smartrec-widget__item {
-		background: #1e1e1e;
-		color: #e0e0e0;
-	}
-
-	.smartrec-widget__item-price del {
-		color: #777;
-	}
-
 	.smartrec-loading__image,
 	.smartrec-loading__text,
 	.smartrec-loading__text--short {
 		background: #333;
-	}
-
-	.smartrec-widget__slider::-webkit-scrollbar-thumb {
-		background: #555;
-	}
-
-	.smartrec-widget__slider-btn {
-		background: #2a2a2a;
-		border-color: #444;
 	}
 }

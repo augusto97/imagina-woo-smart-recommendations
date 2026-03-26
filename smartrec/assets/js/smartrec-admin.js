@@ -128,6 +128,103 @@
 	 * Init
 	 * ========================================================= */
 
+	/* =========================================================
+	 * Shortcode Builder
+	 * ========================================================= */
+
+	function initShortcodeBuilder() {
+		var $type     = $('#smartrec-builder-type');
+		var $title    = $('#smartrec-builder-title');
+		var $limit    = $('#smartrec-builder-limit');
+		var $columns  = $('#smartrec-builder-columns');
+		var $tablet   = $('#smartrec-builder-columns-tablet');
+		var $mobile   = $('#smartrec-builder-columns-mobile');
+		var $layout   = $('#smartrec-builder-layout');
+		var $loadmore = $('#smartrec-builder-loadmore');
+		var $price    = $('#smartrec-builder-price');
+		var $rating   = $('#smartrec-builder-rating');
+		var $cart     = $('#smartrec-builder-cart');
+		var $reason   = $('#smartrec-builder-reason');
+		var $result   = $('#smartrec-builder-result');
+		var $desc     = $('#smartrec-builder-desc');
+		var $copy     = $('#smartrec-builder-copy');
+
+		if (!$type.length) { return; }
+
+		function updateShortcode() {
+			var tag     = $type.val();
+			var selected = $type.find(':selected');
+			var title   = $title.val() || '';
+			var defTitle = selected.data('title') || '';
+			var limit   = parseInt($limit.val(), 10) || 8;
+			var cols    = parseInt($columns.val(), 10) || 4;
+			var tabCols = parseInt($tablet.val(), 10) || 2;
+			var mobCols = parseInt($mobile.val(), 10) || 1;
+			var layout  = $layout.val() || 'grid';
+			var lm      = parseInt($loadmore.val(), 10) || 0;
+
+			var attrs = [];
+
+			/* Only add attrs that differ from defaults */
+			if (title && title !== defTitle) { attrs.push('title="' + title + '"'); }
+			if (limit !== 8)    { attrs.push('limit="' + limit + '"'); }
+			if (cols !== 4)     { attrs.push('columns="' + cols + '"'); }
+			if (tabCols !== 2)  { attrs.push('columns_tablet="' + tabCols + '"'); }
+			if (mobCols !== 1)  { attrs.push('columns_mobile="' + mobCols + '"'); }
+			if (layout !== 'grid') { attrs.push('layout="' + layout + '"'); }
+			if (lm > 0)        { attrs.push('load_more="' + lm + '"'); }
+			if (!$price.is(':checked'))  { attrs.push('show_price="no"'); }
+			if (!$rating.is(':checked')) { attrs.push('show_rating="no"'); }
+			if (!$cart.is(':checked'))   { attrs.push('show_add_to_cart="no"'); }
+			if ($reason.is(':checked'))  { attrs.push('show_reason="yes"'); }
+
+			var shortcode = '[' + tag + (attrs.length ? ' ' + attrs.join(' ') : '') + ']';
+			$result.text(shortcode);
+
+			/* Update description */
+			var descText = '';
+			$('#smartrec-builder-type option').each(function () {
+				/* find matching preset desc from the presets section */
+			});
+		}
+
+		/* Update on any change */
+		$type.add($title).add($limit).add($columns).add($tablet).add($mobile)
+			 .add($layout).add($loadmore).add($price).add($rating).add($cart).add($reason)
+			 .on('input change', updateShortcode);
+
+		/* When type changes, update the title placeholder */
+		$type.on('change', function () {
+			var defTitle = $(this).find(':selected').data('title') || '';
+			$title.attr('placeholder', defTitle).val('');
+			updateShortcode();
+		});
+
+		/* Copy button */
+		$copy.on('click', function () {
+			var text = $result.text();
+			if (navigator.clipboard) {
+				navigator.clipboard.writeText(text).then(function () {
+					$copy.text('Copied!');
+					setTimeout(function () { $copy.text('Copy'); }, 1500);
+				});
+			} else {
+				/* Fallback */
+				var ta = document.createElement('textarea');
+				ta.value = text;
+				document.body.appendChild(ta);
+				ta.select();
+				document.execCommand('copy');
+				document.body.removeChild(ta);
+				$copy.text('Copied!');
+				setTimeout(function () { $copy.text('Copy'); }, 1500);
+			}
+		});
+
+		/* Initial render */
+		updateShortcode();
+	}
+
 	$(function () {
 		/* Restore sub-tab from hash */
 		var hash = window.location.hash.replace('#', '');
@@ -136,6 +233,7 @@
 		}
 
 		initColorPickers();
+		initShortcodeBuilder();
 	});
 
 })(jQuery);

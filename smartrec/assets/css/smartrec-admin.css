@@ -533,6 +533,168 @@
 	font-weight: 600;
 }
 
+/* === Shortcode Builder === */
+.smartrec-builder {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.smartrec-builder__form {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.smartrec-builder__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.smartrec-builder__field label {
+	font-size: 12px;
+	font-weight: 500;
+	color: #50575e;
+}
+
+.smartrec-builder__row {
+	display: flex;
+	gap: 12px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+
+.smartrec-builder__row label {
+	font-size: 13px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.smartrec-builder__output {
+	flex: 1;
+	min-width: 280px;
+	max-width: 400px;
+	position: sticky;
+	top: 40px;
+}
+
+.smartrec-builder__output > label {
+	display: block;
+	font-size: 12px;
+	font-weight: 500;
+	color: #50575e;
+	margin-bottom: 6px;
+}
+
+.smartrec-builder__code-wrap {
+	background: #1d2327;
+	color: #50fa7b;
+	padding: 14px 16px;
+	border-radius: 6px;
+	font-family: monospace;
+	font-size: 13px;
+	line-height: 1.6;
+	word-break: break-all;
+	position: relative;
+	min-height: 50px;
+}
+
+.smartrec-builder__code-wrap code {
+	color: inherit;
+	background: none;
+	padding: 0;
+	font-size: inherit;
+}
+
+#smartrec-builder-copy {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	font-size: 11px;
+}
+
+/* Preset cards */
+.smartrec-presets {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.smartrec-preset {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 16px;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.smartrec-preset:last-child {
+	border-bottom: none;
+}
+
+.smartrec-preset__info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+}
+
+.smartrec-preset__info strong {
+	font-size: 13px;
+	color: #1d2327;
+}
+
+.smartrec-preset__example {
+	font-size: 11px;
+	color: #2271b1;
+	font-style: italic;
+}
+
+.smartrec-preset__desc {
+	font-size: 12px;
+	color: #8c8f94;
+}
+
+.smartrec-preset__code {
+	background: #f6f7f7;
+	padding: 6px 12px;
+	border-radius: 4px;
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: pointer;
+	user-select: all;
+	flex-shrink: 0;
+}
+
+.smartrec-example-code {
+	background: #1d2327;
+	color: #f8f8f2;
+	padding: 16px 20px;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 2;
+	overflow-x: auto;
+	user-select: all;
+}
+
+@media (max-width: 768px) {
+	.smartrec-builder {
+		flex-direction: column;
+	}
+	.smartrec-builder__output {
+		max-width: 100%;
+		position: static;
+	}
+}
+
 /* === Progress Bar === */
 .smartrec-progress {
 	height: 20px;

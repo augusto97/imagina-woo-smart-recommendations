@@ -103,11 +103,12 @@ class AdminPage {
 	public function render_admin_page() {
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'dashboard';
 		$tabs = array(
-			'dashboard' => __( 'Dashboard', 'smartrec' ),
-			'settings'  => __( 'Settings', 'smartrec' ),
-			'rules'     => __( 'Complementary Rules', 'smartrec' ),
-			'analytics' => __( 'Analytics', 'smartrec' ),
-			'tools'     => __( 'Tools', 'smartrec' ),
+			'dashboard'  => __( 'Dashboard', 'smartrec' ),
+			'settings'   => __( 'Settings', 'smartrec' ),
+			'shortcodes' => __( 'Shortcode Builder', 'smartrec' ),
+			'rules'      => __( 'Complementary Rules', 'smartrec' ),
+			'analytics'  => __( 'Analytics', 'smartrec' ),
+			'tools'      => __( 'Tools', 'smartrec' ),
 		);
 
 		// Enqueue color picker assets.
@@ -142,6 +143,9 @@ class AdminPage {
 						break;
 					case 'settings':
 						$this->render_settings();
+						break;
+					case 'shortcodes':
+						$this->render_shortcode_builder();
 						break;
 					case 'rules':
 						$this->render_rules();
@@ -255,6 +259,170 @@ class AdminPage {
 	private function render_settings() {
 		$settings_page = new SettingsPage( $this->settings );
 		$settings_page->render();
+	}
+
+	/**
+	 * Render shortcode builder tab.
+	 *
+	 * @return void
+	 */
+	private function render_shortcode_builder() {
+		$presets = array(
+			'smartrec_recently_viewed'  => array(
+				'name'    => __( 'Recently Viewed', 'smartrec' ),
+				'desc'    => __( 'Products the visitor recently browsed. Shows only to users with history.', 'smartrec' ),
+				'engine'  => 'recently_viewed',
+				'title'   => __( 'Recently viewed', 'smartrec' ),
+				'example' => 'Amazon: "Pick up where you left off"',
+			),
+			'smartrec_for_you'          => array(
+				'name'    => __( 'Recommended For You', 'smartrec' ),
+				'desc'    => __( 'Personalized mix based on browsing, purchases, and preferences.', 'smartrec' ),
+				'engine'  => 'personalized_mix',
+				'title'   => __( 'Recommended for you', 'smartrec' ),
+				'example' => 'Amazon: "Inspired by your browsing history"',
+			),
+			'smartrec_trending'         => array(
+				'name'    => __( 'Trending Now', 'smartrec' ),
+				'desc'    => __( 'Most popular products based on views and purchases. Works for all visitors.', 'smartrec' ),
+				'engine'  => 'trending',
+				'title'   => __( 'Trending now', 'smartrec' ),
+				'example' => 'Amazon: "Best Sellers" / AliExpress: "Top Ranking"',
+			),
+			'smartrec_similar_to_viewed' => array(
+				'name'    => __( 'Related To Viewed', 'smartrec' ),
+				'desc'    => __( 'Products similar to what the visitor has viewed (same category, attributes).', 'smartrec' ),
+				'engine'  => 'similar',
+				'title'   => __( 'Related to what you viewed', 'smartrec' ),
+				'example' => 'Amazon: "Related to items you\'ve viewed"',
+			),
+			'smartrec_bought_together'  => array(
+				'name'    => __( 'Customers Also Bought', 'smartrec' ),
+				'desc'    => __( 'Co-purchase analysis: products frequently bought together.', 'smartrec' ),
+				'engine'  => 'bought_together',
+				'title'   => __( 'Customers also bought', 'smartrec' ),
+				'example' => 'Amazon: "Customers who bought this also bought"',
+			),
+			'smartrec_new_arrivals'     => array(
+				'name'    => __( 'New Arrivals', 'smartrec' ),
+				'desc'    => __( 'Recently added products with trending momentum.', 'smartrec' ),
+				'engine'  => 'trending',
+				'title'   => __( 'New arrivals', 'smartrec' ),
+				'example' => 'AliExpress: "New Arrivals"',
+			),
+		);
+
+		$layouts = array( 'grid' => __( 'Grid', 'smartrec' ), 'slider' => __( 'Slider', 'smartrec' ), 'list' => __( 'List', 'smartrec' ), 'minimal' => __( 'Minimal', 'smartrec' ) );
+		?>
+		<div class="smartrec-section">
+			<h3 class="smartrec-section__title"><?php esc_html_e( 'Shortcode Builder', 'smartrec' ); ?></h3>
+			<p class="smartrec-section__desc"><?php esc_html_e( 'Build shortcodes visually and copy them into any page, post, or widget. Ideal for creating homepage recommendation sections like Amazon, Temu, or AliExpress.', 'smartrec' ); ?></p>
+
+			<!-- Builder form -->
+			<div class="smartrec-builder">
+				<div class="smartrec-builder__form">
+					<div class="smartrec-builder__field">
+						<label for="smartrec-builder-type"><?php esc_html_e( 'Block Type', 'smartrec' ); ?></label>
+						<select id="smartrec-builder-type">
+							<?php foreach ( $presets as $tag => $preset ) : ?>
+								<option value="<?php echo esc_attr( $tag ); ?>"
+										data-title="<?php echo esc_attr( $preset['title'] ); ?>"
+										data-engine="<?php echo esc_attr( $preset['engine'] ); ?>">
+									<?php echo esc_html( $preset['name'] ); ?>
+								</option>
+							<?php endforeach; ?>
+							<option value="smartrec" data-title="<?php esc_attr_e( 'Recommended products', 'smartrec' ); ?>" data-engine="">
+								<?php esc_html_e( 'Custom (advanced)', 'smartrec' ); ?>
+							</option>
+						</select>
+					</div>
+					<div class="smartrec-builder__field">
+						<label for="smartrec-builder-title"><?php esc_html_e( 'Title', 'smartrec' ); ?></label>
+						<input type="text" id="smartrec-builder-title" placeholder="<?php esc_attr_e( 'Recommended for you', 'smartrec' ); ?>">
+					</div>
+					<div class="smartrec-builder__row">
+						<div class="smartrec-builder__field">
+							<label for="smartrec-builder-limit"><?php esc_html_e( 'Products', 'smartrec' ); ?></label>
+							<input type="number" id="smartrec-builder-limit" value="8" min="1" max="20" class="small-text">
+						</div>
+						<div class="smartrec-builder__field">
+							<label for="smartrec-builder-columns"><?php esc_html_e( 'Columns', 'smartrec' ); ?></label>
+							<input type="number" id="smartrec-builder-columns" value="4" min="1" max="6" class="small-text">
+						</div>
+						<div class="smartrec-builder__field">
+							<label for="smartrec-builder-columns-tablet"><?php esc_html_e( 'Tablet', 'smartrec' ); ?></label>
+							<input type="number" id="smartrec-builder-columns-tablet" value="2" min="1" max="6" class="small-text">
+						</div>
+						<div class="smartrec-builder__field">
+							<label for="smartrec-builder-columns-mobile"><?php esc_html_e( 'Mobile', 'smartrec' ); ?></label>
+							<input type="number" id="smartrec-builder-columns-mobile" value="1" min="1" max="6" class="small-text">
+						</div>
+					</div>
+					<div class="smartrec-builder__row">
+						<div class="smartrec-builder__field">
+							<label for="smartrec-builder-layout"><?php esc_html_e( 'Layout', 'smartrec' ); ?></label>
+							<select id="smartrec-builder-layout">
+								<?php foreach ( $layouts as $lk => $ll ) : ?>
+									<option value="<?php echo esc_attr( $lk ); ?>"><?php echo esc_html( $ll ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						<div class="smartrec-builder__field">
+							<label for="smartrec-builder-loadmore"><?php esc_html_e( 'Load More (0=off)', 'smartrec' ); ?></label>
+							<input type="number" id="smartrec-builder-loadmore" value="0" min="0" max="20" class="small-text">
+						</div>
+					</div>
+					<div class="smartrec-builder__row">
+						<label><input type="checkbox" id="smartrec-builder-price" checked> <?php esc_html_e( 'Price', 'smartrec' ); ?></label>
+						<label><input type="checkbox" id="smartrec-builder-rating" checked> <?php esc_html_e( 'Rating', 'smartrec' ); ?></label>
+						<label><input type="checkbox" id="smartrec-builder-cart" checked> <?php esc_html_e( 'Add to Cart', 'smartrec' ); ?></label>
+						<label><input type="checkbox" id="smartrec-builder-reason"> <?php esc_html_e( 'Reason badge', 'smartrec' ); ?></label>
+					</div>
+				</div>
+
+				<!-- Generated shortcode output -->
+				<div class="smartrec-builder__output">
+					<label><?php esc_html_e( 'Generated Shortcode', 'smartrec' ); ?></label>
+					<div class="smartrec-builder__code-wrap">
+						<code id="smartrec-builder-result"></code>
+						<button type="button" class="button button-small" id="smartrec-builder-copy"><?php esc_html_e( 'Copy', 'smartrec' ); ?></button>
+					</div>
+					<p class="description" id="smartrec-builder-desc"></p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Preset reference -->
+		<div class="smartrec-section">
+			<h3 class="smartrec-section__title"><?php esc_html_e( 'Quick Reference', 'smartrec' ); ?></h3>
+			<p class="smartrec-section__desc"><?php esc_html_e( 'Copy any of these shortcodes directly into your pages. Use the builder above to customize them.', 'smartrec' ); ?></p>
+
+			<div class="smartrec-presets">
+				<?php foreach ( $presets as $tag => $preset ) : ?>
+					<div class="smartrec-preset">
+						<div class="smartrec-preset__info">
+							<strong><?php echo esc_html( $preset['name'] ); ?></strong>
+							<span class="smartrec-preset__example"><?php echo esc_html( $preset['example'] ); ?></span>
+							<span class="smartrec-preset__desc"><?php echo esc_html( $preset['desc'] ); ?></span>
+						</div>
+						<code class="smartrec-preset__code">[<?php echo esc_html( $tag ); ?>]</code>
+					</div>
+				<?php endforeach; ?>
+			</div>
+		</div>
+
+		<div class="smartrec-section">
+			<h3 class="smartrec-section__title"><?php esc_html_e( 'Homepage Example', 'smartrec' ); ?></h3>
+			<p class="smartrec-section__desc"><?php esc_html_e( 'Paste this combination into your homepage to create an Amazon-style experience:', 'smartrec' ); ?></p>
+			<pre class="smartrec-example-code">[smartrec_recently_viewed limit="8" columns="4" columns_tablet="2" columns_mobile="1" layout="slider"]
+
+[smartrec_for_you limit="8" columns="4" columns_tablet="2" columns_mobile="1"]
+
+[smartrec_trending limit="8" columns="4" columns_tablet="2" columns_mobile="2"]
+
+[smartrec_bought_together limit="4" columns="4" columns_tablet="2" columns_mobile="1"]</pre>
+		</div>
+		<?php
 	}
 
 	/**

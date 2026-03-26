@@ -100,20 +100,20 @@ class Renderer {
 	private function build_dynamic_css(): string {
 		// All CSS variables with their defaults. Admin values override these.
 		$defaults = array(
-			'--smartrec-columns'     => '4',
-			'--smartrec-gap'         => '16px',
+			'--smartrec-columns'      => '4',
+			'--smartrec-gap'          => '16px',
 			'--smartrec-card-padding' => '12px',
-			'--smartrec-card-radius' => '8px',
-			'--smartrec-card-shadow' => '0 1px 3px rgba(0,0,0,0.08)',
-			'--smartrec-title-size'  => '18px',
-			'--smartrec-badge-bg'    => '#f0f0f0',
-			'--smartrec-badge-color' => '#333',
-			'--smartrec-accent'      => 'var(--wc-primary,#7f54b3)',
-			'--smartrec-card-bg'     => '#fff',
-			'--smartrec-card-text'   => '#333',
-			'--smartrec-title-color' => 'inherit',
-			'--smartrec-btn-bg'      => 'var(--smartrec-accent)',
-			'--smartrec-btn-text'    => '#fff',
+			'--smartrec-card-radius'  => '8px',
+			'--smartrec-card-shadow'  => '0 1px 3px rgba(0,0,0,0.08)',
+			'--smartrec-title-size'   => '18px',
+			'--smartrec-badge-bg'     => '#f0f0f0',
+			'--smartrec-badge-color'  => '#333',
+			'--smartrec-accent'       => '#7f54b3',
+			'--smartrec-card-bg'      => '#fff',
+			'--smartrec-card-text'    => '#333',
+			'--smartrec-title-color'  => 'inherit',
+			'--smartrec-btn-bg'       => '#7f54b3',
+			'--smartrec-btn-text'     => '#fff',
 		);
 
 		// Map admin settings to CSS variable names.
@@ -139,6 +139,12 @@ class Renderer {
 			}
 		}
 
+		// If accent is set but btn_bg is not, button inherits accent.
+		$accent_val = $this->settings->get( 'style_accent_color', '' );
+		if ( ! empty( $accent_val ) && empty( $this->settings->get( 'style_btn_bg', '' ) ) ) {
+			$defaults['--smartrec-btn-bg'] = $accent_val;
+		}
+
 		// Shadow presets.
 		$shadow = $this->settings->get( 'style_card_shadow', '' );
 		if ( ! empty( $shadow ) ) {
@@ -153,33 +159,12 @@ class Renderer {
 			}
 		}
 
-		// Build the single :root block with all variables.
+		// Build :root block.
 		$vars = array();
 		foreach ( $defaults as $var => $value ) {
 			$vars[] = $var . ':' . $value;
 		}
 		$css = ':root{' . implode( ';', $vars ) . '}';
-
-		// Also apply admin colors directly on elements with !important
-		// to guarantee they override any media queries or theme CSS.
-		$direct_rules = array();
-
-		$card_bg   = $defaults['--smartrec-card-bg'];
-		$card_text = $defaults['--smartrec-card-text'];
-		$btn_bg    = $defaults['--smartrec-btn-bg'];
-		$btn_text  = $defaults['--smartrec-btn-text'];
-		$badge_bg  = $defaults['--smartrec-badge-bg'];
-		$badge_clr = $defaults['--smartrec-badge-color'];
-		$title_clr = $defaults['--smartrec-title-color'];
-		$accent    = $defaults['--smartrec-accent'];
-
-		$direct_rules[] = '.smartrec-widget__item{background:' . $card_bg . ' !important;color:' . $card_text . ' !important}';
-		$direct_rules[] = '.smartrec-widget__title{color:' . $title_clr . ' !important}';
-		$direct_rules[] = '.smartrec-widget__badge{background:' . $badge_bg . ' !important;color:' . $badge_clr . ' !important}';
-		$direct_rules[] = '.smartrec-widget__item-price{color:' . $accent . ' !important}';
-		$direct_rules[] = '.smartrec-widget__item-button .button,.smartrec-widget__item-button a,.smartrec-widget__add-to-cart{background:' . $btn_bg . ' !important;color:' . $btn_text . ' !important}';
-
-		$css .= "\n" . implode( "\n", $direct_rules );
 
 		// Inherit theme fonts.
 		if ( $this->settings->get( 'inherit_theme_fonts', true ) ) {

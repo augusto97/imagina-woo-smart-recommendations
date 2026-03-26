@@ -388,10 +388,16 @@ class Renderer {
 			$partial_template = SMARTREC_PLUGIN_DIR . 'templates/partials/product-card.php';
 			if ( file_exists( $partial_template ) ) {
 				foreach ( $products as $product ) {
+					// Set WC globals so woocommerce_template_loop_add_to_cart() works.
+					$GLOBALS['post']    = get_post( $product->get_id() );
+					$GLOBALS['product'] = $product;
+					setup_postdata( $GLOBALS['post'] );
+
 					$product_id = $product->get_id();
 					$reason     = $reasons[ $product_id ] ?? '';
 					include $partial_template;
 				}
+				wp_reset_postdata();
 			}
 		}
 

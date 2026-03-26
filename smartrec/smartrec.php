@@ -3,7 +3,7 @@
  * Plugin Name: SmartRec — Intelligent Product Recommendations for WooCommerce
  * Plugin URI:  https://github.com/augusto97/imagina-woo-smart-recommendations
  * Description: Advanced, behavior-driven product recommendation engine running entirely within WordPress.
- * Version:     1.4.0
+ * Version:     1.5.0
  * Author:      SmartRec
  * Author URI:  https://github.com/augusto97
  * License:     GPL v2 or later
@@ -21,7 +21,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // Plugin constants.
-define( 'SMARTREC_VERSION', '1.4.0' );
+define( 'SMARTREC_VERSION', '1.5.0' );
 define( 'SMARTREC_PLUGIN_FILE', __FILE__ );
 define( 'SMARTREC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMARTREC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

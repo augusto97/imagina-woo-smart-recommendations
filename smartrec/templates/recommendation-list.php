@@ -106,4 +106,21 @@ $css_class = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings['css_
 		<?php endforeach; ?>
 	</div>
 
+	<?php if ( ! empty( $settings['load_more'] ) ) : ?>
+		<div class="smartrec-load-more">
+			<button type="button"
+					class="smartrec-load-more__btn"
+					data-location="<?php echo esc_attr( $settings['location'] ?? '' ); ?>"
+					data-product-id="<?php echo esc_attr( $settings['product_id'] ?? 0 ); ?>"
+					data-engine="<?php echo esc_attr( $settings['engine'] ?? '' ); ?>"
+					data-offset="<?php echo esc_attr( count( $products ) ); ?>"
+					data-limit="<?php echo esc_attr( $settings['load_more_count'] ?? 4 ); ?>"
+					data-layout="list"
+					data-use-wc="0"
+					data-columns="1">
+				<?php echo esc_html( $settings['load_more_text'] ?? __( 'Load more', 'smartrec' ) ); ?>
+			</button>
+		</div>
+	<?php endif; ?>
+
 </div>

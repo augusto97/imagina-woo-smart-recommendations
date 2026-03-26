@@ -505,11 +505,21 @@ class AdminPage {
 			}
 		}
 
+		// Load more per location.
+		$loc_load_more = array();
+		foreach ( $location_keys as $loc ) {
+			$lm_val = isset( $_POST['smartrec_loc_load_more'][ $loc ] ) ? absint( $_POST['smartrec_loc_load_more'][ $loc ] ) : 0;
+			if ( $lm_val > 0 && $lm_val <= 20 ) {
+				$loc_load_more[ $loc ] = $lm_val;
+			}
+		}
+
 		$this->settings->set( 'location_engines', $loc_engines );
 		$this->settings->set( 'location_titles', $loc_titles );
 		$this->settings->set( 'location_limits', $loc_limits );
 		$this->settings->set( 'location_layouts', $loc_layouts );
 		$this->settings->set( 'location_columns', $loc_columns );
+		$this->settings->set( 'location_load_more', $loc_load_more );
 
 		// Appearance / style settings.
 		$style_fields = array(

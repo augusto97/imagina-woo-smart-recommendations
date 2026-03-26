@@ -72,6 +72,21 @@ class Renderer {
 			wp_add_inline_style( 'smartrec-frontend', $css );
 		}
 
+		// Load More JS — always register so the inline script can use the REST URL.
+		wp_register_script( 'smartrec-load-more', false, array(), SMARTREC_VERSION, true );
+		wp_enqueue_script( 'smartrec-load-more' );
+
+		$load_more_js = SMARTREC_PLUGIN_DIR . 'assets/js/smartrec-load-more.js';
+		if ( file_exists( $load_more_js ) ) {
+			wp_add_inline_script(
+				'smartrec-load-more',
+				'var smartrecLoadMore=' . wp_json_encode( array(
+					'restUrl' => rest_url( 'smartrec/v1/recommendations' ),
+					'nonce'   => wp_create_nonce( 'wp_rest' ),
+				) ) . ';' . file_get_contents( $load_more_js ) // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			);
+		}
+
 		if ( $this->settings->get( 'ajax_loading', false ) ) {
 			wp_enqueue_script(
 				'smartrec-display',
@@ -204,6 +219,11 @@ class Renderer {
 				'show_add_to_cart' => $this->settings->get( 'show_add_to_cart', true ),
 				'show_reason'   => $this->settings->get( 'show_reason', true ),
 				'use_wc_template' => $this->settings->get( 'use_wc_template', false ),
+				'load_more'       => $location_settings['load_more'] ?? false,
+				'load_more_count' => $location_settings['load_more_count'] ?? 4,
+				'load_more_text'  => $this->settings->get( 'load_more_text', __( 'Load more', 'smartrec' ) ),
+				'location'        => $location,
+				'product_id'      => $productId,
 				'css_class'     => '',
 			)
 		);

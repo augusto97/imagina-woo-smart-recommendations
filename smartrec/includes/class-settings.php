@@ -175,6 +175,14 @@ class Settings {
 			'show_add_to_cart'          => true,
 			'show_reason'               => true,
 
+			// Load more.
+			'load_more_enabled'         => false,
+			'load_more_count'           => 4,
+			'load_more_text'            => 'Load more',
+
+			// Per-location load more counts.
+			'location_load_more'        => array(),
+
 			// Cache.
 			'cache_enabled'             => true,
 			'cache_ttl_product'         => 3600,
@@ -269,13 +277,19 @@ class Settings {
 		$default_limit = (int) $this->get( 'default_limit', 8 );
 		$default_layout = $this->get( 'default_layout', 'grid' );
 
+		$load_more_map = $this->get( 'location_load_more', array() );
+		$load_more_global = $this->get( 'load_more_enabled', false );
+		$load_more_count  = (int) $this->get( 'load_more_count', 4 );
+
 		return array(
-			'enabled' => $this->get( 'location_' . $location, false ),
-			'engine'  => $engines[ $location ] ?? 'personalized_mix',
-			'title'   => $titles[ $location ] ?? __( 'Recommended products', 'smartrec' ),
-			'limit'   => ! empty( $limits[ $location ] ) ? (int) $limits[ $location ] : $default_limit,
-			'layout'  => ! empty( $layouts[ $location ] ) ? $layouts[ $location ] : $default_layout,
-			'columns' => ! empty( $columns[ $location ] ) ? (int) $columns[ $location ] : 4,
+			'enabled'         => $this->get( 'location_' . $location, false ),
+			'engine'          => $engines[ $location ] ?? 'personalized_mix',
+			'title'           => $titles[ $location ] ?? __( 'Recommended products', 'smartrec' ),
+			'limit'           => ! empty( $limits[ $location ] ) ? (int) $limits[ $location ] : $default_limit,
+			'layout'          => ! empty( $layouts[ $location ] ) ? $layouts[ $location ] : $default_layout,
+			'columns'         => ! empty( $columns[ $location ] ) ? (int) $columns[ $location ] : 4,
+			'load_more'       => ! empty( $load_more_map[ $location ] ) ? true : $load_more_global,
+			'load_more_count' => ! empty( $load_more_map[ $location ] ) ? (int) $load_more_map[ $location ] : $load_more_count,
 		);
 	}
 

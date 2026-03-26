@@ -101,6 +101,10 @@ class RestAPI {
 						'default'           => 8,
 						'sanitize_callback' => 'absint',
 					),
+					'offset'     => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 					'format'     => array(
 						'default'           => 'json',
 						'sanitize_callback' => 'sanitize_text_field',
@@ -237,8 +241,10 @@ class RestAPI {
 		$engine     = $request->get_param( 'engine' );
 		$limit      = min( 20, max( 1, (int) $request->get_param( 'limit' ) ) );
 		$format     = $request->get_param( 'format' );
+		$offset     = max( 0, (int) $request->get_param( 'offset' ) );
 
 		$args = array(
+			'offset' => $offset,
 			'limit' => $limit,
 		);
 
@@ -320,6 +326,7 @@ class RestAPI {
 		$limit       = min( 20, max( 1, (int) $request->get_param( 'limit' ) ) );
 
 		$args = array(
+			'offset' => $offset,
 			'limit'       => $limit,
 			'engine'      => 'trending',
 			'category_id' => $category_id,

@@ -386,3 +386,33 @@
 		background: #333;
 	}
 }
+
+/* === Load More Button === */
+.smartrec-load-more {
+	text-align: center;
+	margin-block-start: 1.5em;
+}
+
+.smartrec-load-more__btn {
+	display: inline-block;
+	padding: 10px 32px;
+	font-size: 14px;
+	font-weight: 500;
+	font-family: inherit;
+	color: var(--smartrec-card-text, #333);
+	background: var(--smartrec-card-bg, #fff);
+	border: 2px solid var(--smartrec-accent, #7f54b3);
+	border-radius: var(--smartrec-card-radius, 8px);
+	cursor: pointer;
+	transition: background 0.2s, color 0.2s;
+}
+
+.smartrec-load-more__btn:hover {
+	background: var(--smartrec-accent, #7f54b3);
+	color: var(--smartrec-btn-text, #fff);
+}
+
+.smartrec-load-more__btn--loading {
+	opacity: 0.6;
+	pointer-events: none;
+}

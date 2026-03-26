@@ -358,11 +358,12 @@ class SettingsPage {
 
 		$layouts = array( '' => __( 'Default', 'smartrec' ), 'grid' => __( 'Grid', 'smartrec' ), 'slider' => __( 'Slider', 'smartrec' ), 'list' => __( 'List', 'smartrec' ), 'minimal' => __( 'Minimal', 'smartrec' ) );
 
-		$loc_engines = $this->settings->get( 'location_engines', array() );
-		$loc_titles  = $this->settings->get( 'location_titles', array() );
-		$loc_limits  = $this->settings->get( 'location_limits', array() );
-		$loc_layouts = $this->settings->get( 'location_layouts', array() );
-		$loc_columns = $this->settings->get( 'location_columns', array() );
+		$loc_engines   = $this->settings->get( 'location_engines', array() );
+		$loc_titles    = $this->settings->get( 'location_titles', array() );
+		$loc_limits    = $this->settings->get( 'location_limits', array() );
+		$loc_layouts   = $this->settings->get( 'location_layouts', array() );
+		$loc_columns   = $this->settings->get( 'location_columns', array() );
+		$loc_load_more = $this->settings->get( 'location_load_more', array() );
 		?>
 		<div class="smartrec-section">
 			<h3 class="smartrec-section__title"><?php esc_html_e( 'Display Locations', 'smartrec' ); ?></h3>
@@ -375,7 +376,8 @@ class SettingsPage {
 					$cur_title  = $loc_titles[ $key ] ?? '';
 					$cur_limit  = $loc_limits[ $key ] ?? '';
 					$cur_layout = $loc_layouts[ $key ] ?? '';
-					$cur_cols   = $loc_columns[ $key ] ?? '';
+					$cur_cols      = $loc_columns[ $key ] ?? '';
+					$cur_load_more = $loc_load_more[ $key ] ?? '';
 					?>
 					<div class="smartrec-loc <?php echo $enabled ? 'smartrec-loc--active' : ''; ?>">
 						<div class="smartrec-loc__header" tabindex="0" role="button">
@@ -427,6 +429,13 @@ class SettingsPage {
 												<option value="<?php echo esc_attr( $lk ); ?>" <?php selected( $cur_layout, $lk ); ?>><?php echo esc_html( $ll ); ?></option>
 											<?php endforeach; ?>
 										</select>
+									</td>
+								</tr>
+								<tr>
+									<th><?php esc_html_e( 'Load More', 'smartrec' ); ?></th>
+									<td>
+										<input type="number" name="smartrec_loc_load_more[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cur_load_more ); ?>" min="0" max="20" placeholder="0" class="small-text">
+										<p class="description"><?php esc_html_e( 'Products per click. 0 or empty = disabled. Not available for slider.', 'smartrec' ); ?></p>
 									</td>
 								</tr>
 							</table>

@@ -505,6 +505,20 @@ class AdminPage {
 			}
 		}
 
+		// Responsive columns (tablet, mobile) per location.
+		$loc_cols_tablet = array();
+		$loc_cols_mobile = array();
+		foreach ( $location_keys as $loc ) {
+			$tablet = isset( $_POST['smartrec_loc_columns_tablet'][ $loc ] ) ? absint( $_POST['smartrec_loc_columns_tablet'][ $loc ] ) : 0;
+			$mobile = isset( $_POST['smartrec_loc_columns_mobile'][ $loc ] ) ? absint( $_POST['smartrec_loc_columns_mobile'][ $loc ] ) : 0;
+			if ( $tablet > 0 && $tablet <= 6 ) {
+				$loc_cols_tablet[ $loc ] = $tablet;
+			}
+			if ( $mobile > 0 && $mobile <= 6 ) {
+				$loc_cols_mobile[ $loc ] = $mobile;
+			}
+		}
+
 		// Load more per location.
 		$loc_load_more = array();
 		foreach ( $location_keys as $loc ) {
@@ -519,6 +533,8 @@ class AdminPage {
 		$this->settings->set( 'location_limits', $loc_limits );
 		$this->settings->set( 'location_layouts', $loc_layouts );
 		$this->settings->set( 'location_columns', $loc_columns );
+		$this->settings->set( 'location_columns_tablet', $loc_cols_tablet );
+		$this->settings->set( 'location_columns_mobile', $loc_cols_mobile );
 		$this->settings->set( 'location_load_more', $loc_load_more );
 
 		// Appearance / style settings.

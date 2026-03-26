@@ -381,6 +381,24 @@
 	border-radius: 2px;
 }
 
+/* Responsive columns fields */
+.smartrec-columns-responsive {
+	display: flex;
+	gap: 12px;
+}
+
+.smartrec-columns-responsive label {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.smartrec-columns-responsive label span {
+	font-size: 11px;
+	color: #8c8f94;
+	font-weight: 400;
+}
+
 @media (max-width: 600px) {
 	.smartrec-loc__body { padding-left: 16px; }
 	.smartrec-loc__engine-badge { display: none; }

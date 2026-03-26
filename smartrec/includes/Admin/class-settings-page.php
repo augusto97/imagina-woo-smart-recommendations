@@ -363,6 +363,8 @@ class SettingsPage {
 		$loc_limits    = $this->settings->get( 'location_limits', array() );
 		$loc_layouts   = $this->settings->get( 'location_layouts', array() );
 		$loc_columns   = $this->settings->get( 'location_columns', array() );
+		$loc_cols_tablet = $this->settings->get( 'location_columns_tablet', array() );
+		$loc_cols_mobile = $this->settings->get( 'location_columns_mobile', array() );
 		$loc_load_more = $this->settings->get( 'location_load_more', array() );
 		?>
 		<div class="smartrec-section">
@@ -376,8 +378,10 @@ class SettingsPage {
 					$cur_title  = $loc_titles[ $key ] ?? '';
 					$cur_limit  = $loc_limits[ $key ] ?? '';
 					$cur_layout = $loc_layouts[ $key ] ?? '';
-					$cur_cols      = $loc_columns[ $key ] ?? '';
-					$cur_load_more = $loc_load_more[ $key ] ?? '';
+					$cur_cols        = $loc_columns[ $key ] ?? '';
+					$cur_cols_tablet = $loc_cols_tablet[ $key ] ?? '';
+					$cur_cols_mobile = $loc_cols_mobile[ $key ] ?? '';
+					$cur_load_more   = $loc_load_more[ $key ] ?? '';
 					?>
 					<div class="smartrec-loc <?php echo $enabled ? 'smartrec-loc--active' : ''; ?>">
 						<div class="smartrec-loc__header" tabindex="0" role="button">
@@ -417,8 +421,19 @@ class SettingsPage {
 								</tr>
 								<tr>
 									<th><?php esc_html_e( 'Columns', 'smartrec' ); ?></th>
-									<td>
-										<input type="number" name="smartrec_loc_columns[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cur_cols ); ?>" min="1" max="6" placeholder="4" class="small-text">
+									<td class="smartrec-columns-responsive">
+										<label>
+											<span><?php esc_html_e( 'Desktop', 'smartrec' ); ?></span>
+											<input type="number" name="smartrec_loc_columns[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cur_cols ); ?>" min="1" max="6" placeholder="4" class="small-text">
+										</label>
+										<label>
+											<span><?php esc_html_e( 'Tablet', 'smartrec' ); ?></span>
+											<input type="number" name="smartrec_loc_columns_tablet[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cur_cols_tablet ); ?>" min="1" max="6" placeholder="2" class="small-text">
+										</label>
+										<label>
+											<span><?php esc_html_e( 'Mobile', 'smartrec' ); ?></span>
+											<input type="number" name="smartrec_loc_columns_mobile[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cur_cols_mobile ); ?>" min="1" max="6" placeholder="1" class="small-text">
+										</label>
 									</td>
 								</tr>
 								<tr>

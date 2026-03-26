@@ -18,11 +18,13 @@ if ( empty( $products ) ) {
 	return;
 }
 
-$columns   = ! empty( $settings['columns'] ) ? absint( $settings['columns'] ) : 4;
-$css_class = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings['css_class'] ) : '';
+$columns        = ! empty( $settings['columns'] ) ? absint( $settings['columns'] ) : 4;
+$columns_tablet = ! empty( $settings['columns_tablet'] ) ? absint( $settings['columns_tablet'] ) : 2;
+$columns_mobile = ! empty( $settings['columns_mobile'] ) ? absint( $settings['columns_mobile'] ) : 1;
+$css_class      = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings['css_class'] ) : '';
 ?>
 
-<div class="smartrec-widget smartrec-widget--grid<?php echo $css_class; ?>" style="--smartrec-columns: <?php echo esc_attr( $columns ); ?>;">
+<div class="smartrec-widget smartrec-widget--grid<?php echo $css_class; ?>" style="--smartrec-columns:<?php echo esc_attr( $columns ); ?>;--smartrec-columns-tablet:<?php echo esc_attr( $columns_tablet ); ?>;--smartrec-columns-mobile:<?php echo esc_attr( $columns_mobile ); ?>;">
 
 	<?php if ( ! empty( $title ) ) : ?>
 		<h2 class="smartrec-widget__title"><?php echo esc_html( $title ); ?></h2>

@@ -277,6 +277,8 @@ class Settings {
 		$default_limit = (int) $this->get( 'default_limit', 8 );
 		$default_layout = $this->get( 'default_layout', 'grid' );
 
+		$cols_tablet  = $this->get( 'location_columns_tablet', array() );
+		$cols_mobile  = $this->get( 'location_columns_mobile', array() );
 		$load_more_map = $this->get( 'location_load_more', array() );
 		$load_more_global = $this->get( 'load_more_enabled', false );
 		$load_more_count  = (int) $this->get( 'load_more_count', 4 );
@@ -288,6 +290,8 @@ class Settings {
 			'limit'           => ! empty( $limits[ $location ] ) ? (int) $limits[ $location ] : $default_limit,
 			'layout'          => ! empty( $layouts[ $location ] ) ? $layouts[ $location ] : $default_layout,
 			'columns'         => ! empty( $columns[ $location ] ) ? (int) $columns[ $location ] : 4,
+			'columns_tablet'  => ! empty( $cols_tablet[ $location ] ) ? (int) $cols_tablet[ $location ] : 2,
+			'columns_mobile'  => ! empty( $cols_mobile[ $location ] ) ? (int) $cols_mobile[ $location ] : 1,
 			'load_more'       => ! empty( $load_more_map[ $location ] ) ? true : $load_more_global,
 			'load_more_count' => ! empty( $load_more_map[ $location ] ) ? (int) $load_more_map[ $location ] : $load_more_count,
 		);

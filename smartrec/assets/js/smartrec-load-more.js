@@ -5,7 +5,7 @@
  * and appends to the existing product container.
  *
  * @package SmartRec
- * @since 1.6.0
+ * @since 1.6.3
  */
 (function () {
 	'use strict';
@@ -27,12 +27,13 @@
 		var limit     = parseInt(btn.getAttribute('data-limit') || '4', 10);
 		var useWc     = btn.getAttribute('data-use-wc') === '1';
 
-		// Collect IDs of already-shown products to exclude them.
+		// Find the product container.
 		var widget    = btn.closest('.smartrec-widget');
 		var container;
 
 		if (useWc) {
-			container = widget.querySelector('ul.products');
+			container = widget.querySelector('.smartrec-wc-products ul.products')
+					 || widget.querySelector('ul.products');
 		} else {
 			container = widget.querySelector('.smartrec-widget__grid')
 					 || widget.querySelector('.smartrec-widget__list')
@@ -41,24 +42,34 @@
 
 		if (!container) { return; }
 
+		// Collect IDs of already-shown products to exclude.
 		var shownIds = [];
-		var items = useWc
-			? container.querySelectorAll('li.product')
-			: container.querySelectorAll('[data-product-id]');
 
-		items.forEach(function (el) {
-			var id = useWc
-				? (el.querySelector('.add_to_cart_button') || {}).getAttribute('data-product_id')
-				: el.getAttribute('data-product-id');
-			if (id) { shownIds.push(id); }
-		});
+		if (useWc) {
+			container.querySelectorAll('li.product').forEach(function (li) {
+				// Try data-product_id on add-to-cart button.
+				var atcBtn = li.querySelector('[data-product_id]');
+				if (atcBtn) {
+					shownIds.push(atcBtn.getAttribute('data-product_id'));
+					return;
+				}
+				// Fallback: extract from post-{id} class.
+				var classes = li.className || '';
+				var match = classes.match(/post-(\d+)/);
+				if (match) { shownIds.push(match[1]); }
+			});
+		} else {
+			container.querySelectorAll('[data-product-id]').forEach(function (el) {
+				shownIds.push(el.getAttribute('data-product-id'));
+			});
+		}
 
 		// Loading state.
 		btn.classList.add('smartrec-load-more__btn--loading');
 		var originalText = btn.textContent;
 		btn.textContent = '...';
 
-		// Build request — ask for server-rendered HTML (partial = items only).
+		// Build request.
 		var params = new URLSearchParams({
 			location:   location,
 			product_id: productId,
@@ -83,7 +94,7 @@
 				return;
 			}
 
-			// Parse and append the server-rendered items.
+			// Parse the server-rendered HTML and append items.
 			var temp = document.createElement('div');
 			temp.innerHTML = html;
 
@@ -97,7 +108,7 @@
 			}
 		})
 		.catch(function () {
-			// Silent fail — just reset button.
+			// Silent fail — reset button.
 		})
 		.finally(function () {
 			btn.classList.remove('smartrec-load-more__btn--loading');

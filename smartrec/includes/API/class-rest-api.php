@@ -289,6 +289,11 @@ class RestAPI {
 
 			$location_settings = $this->settings->get_location_settings( $location );
 			$merged_args = array_merge( $location_settings, $args );
+			$merged_args['use_wc_template'] = $this->settings->get( 'use_wc_template', false );
+			$merged_args['show_price']       = $this->settings->get( 'show_price', true );
+			$merged_args['show_rating']      = $this->settings->get( 'show_rating', true );
+			$merged_args['show_add_to_cart'] = $this->settings->get( 'show_add_to_cart', true );
+			$merged_args['show_reason']      = $this->settings->get( 'show_reason', true );
 
 			// Partial mode: render only product items, not the full widget.
 			$partial = (bool) $request->get_param( 'partial' );

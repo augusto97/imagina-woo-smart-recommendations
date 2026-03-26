@@ -89,13 +89,6 @@ class RestAPI {
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
-					),
 					'product_id' => array(
 						'default'           => 0,
 						'sanitize_callback' => 'absint',
@@ -103,13 +96,6 @@ class RestAPI {
 					'engine'     => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
 					),
 					'limit'      => array(
 						'default'           => 8,
@@ -124,7 +110,8 @@ class RestAPI {
 						'sanitize_callback' => 'sanitize_text_field',
 					),
 					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 					'partial'    => array(
 						'default'           => 0,
@@ -155,13 +142,6 @@ class RestAPI {
 						'default'           => '7d',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
-					),
 				),
 			)
 		);
@@ -179,45 +159,17 @@ class RestAPI {
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
-					),
 					'date_from' => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
 					),
 					'date_to'   => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
-					),
 					'engine'    => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'exclude'    => array(
-						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
-					),
-					'partial'    => array(
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
 					),
 				),
 			)

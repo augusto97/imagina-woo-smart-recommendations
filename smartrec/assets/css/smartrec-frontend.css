@@ -51,21 +51,27 @@
 	display: none !important;
 }
 
+/* === Responsive Columns ===
+ * Uses per-widget CSS variables set via inline style on the container.
+ * --smartrec-columns: desktop (set on element)
+ * --smartrec-columns-tablet: tablet (<=1024px)
+ * --smartrec-columns-mobile: mobile (<=767px)
+ */
 @media (max-width: 1024px) {
 	.smartrec-widget__grid {
-		--smartrec-columns: 3;
+		grid-template-columns: repeat(var(--smartrec-columns-tablet, 2), 1fr);
+	}
+	.smartrec-wc-products ul.products {
+		grid-template-columns: repeat(var(--smartrec-columns-tablet, 2), 1fr) !important;
 	}
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
 	.smartrec-widget__grid {
-		--smartrec-columns: 2;
+		grid-template-columns: repeat(var(--smartrec-columns-mobile, 1), 1fr);
 	}
-}
-
-@media (max-width: 480px) {
-	.smartrec-widget__grid {
-		--smartrec-columns: 1;
+	.smartrec-wc-products ul.products {
+		grid-template-columns: repeat(var(--smartrec-columns-mobile, 1), 1fr) !important;
 	}
 }
 

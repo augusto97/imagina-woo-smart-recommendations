@@ -121,7 +121,9 @@ class AdminPage {
 		}
 		?>
 		<div class="wrap smartrec-admin">
-			<h1><?php esc_html_e( 'SmartRec — Intelligent Product Recommendations', 'smartrec' ); ?></h1>
+			<h1><?php esc_html_e( 'SmartRec — Intelligent Product Recommendations', 'smartrec' ); ?>
+				<span style="font-size:12px;font-weight:normal;color:#8c8f94;margin-left:8px;">v<?php echo esc_html( SMARTREC_VERSION ); ?></span>
+			</h1>
 
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $tabs as $tab_id => $tab_name ) : ?>

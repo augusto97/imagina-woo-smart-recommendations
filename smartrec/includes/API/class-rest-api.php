@@ -89,6 +89,13 @@ class RestAPI {
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 					'product_id' => array(
 						'default'           => 0,
 						'sanitize_callback' => 'absint',
@@ -96,6 +103,13 @@ class RestAPI {
 					'engine'     => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
 					),
 					'limit'      => array(
 						'default'           => 8,
@@ -108,6 +122,13 @@ class RestAPI {
 					'format'     => array(
 						'default'           => 'json',
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
 					),
 				),
 			)
@@ -134,6 +155,13 @@ class RestAPI {
 						'default'           => '7d',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 				),
 			)
 		);
@@ -151,17 +179,45 @@ class RestAPI {
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 					'date_from' => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
 					),
 					'date_to'   => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 					'engine'    => array(
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'exclude'    => array(
+						'default'           => '',ttttttsanitize_callback' => 'sanitize_text_field',
+					),
+					'partial'    => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
 					),
 				),
 			)
@@ -243,9 +299,17 @@ class RestAPI {
 		$format     = $request->get_param( 'format' );
 		$offset     = max( 0, (int) $request->get_param( 'offset' ) );
 
+		// Exclude already-shown product IDs.
+		$exclude_raw = $request->get_param( 'exclude' );
+		$exclude_ids = array();
+		if ( ! empty( $exclude_raw ) ) {
+			$exclude_ids = array_filter( array_map( 'absint', explode( ',', $exclude_raw ) ) );
+		}
+
 		$args = array(
-			'offset' => $offset,
-			'limit' => $limit,
+			'offset'  => $offset,
+			'limit'   => $limit,
+			'exclude' => $exclude_ids,
 		);
 
 		if ( ! empty( $engine ) ) {
@@ -253,6 +317,13 @@ class RestAPI {
 		}
 
 		$recommendations = $this->manager->getRecommendations( $location, $product_id, $args );
+
+		// Filter out excluded IDs (safety net in case engine doesn't support exclude).
+		if ( ! empty( $exclude_ids ) ) {
+			$recommendations = array_values( array_filter( $recommendations, function ( $rec ) use ( $exclude_ids ) {
+				return ! in_array( (int) $rec['product_id'], $exclude_ids, true );
+			} ) );
+		}
 
 		if ( 'html' === $format ) {
 			$renderer = new \SmartRec\Display\Renderer( $this->manager, $this->settings );
@@ -265,16 +336,22 @@ class RestAPI {
 			}
 
 			$location_settings = $this->settings->get_location_settings( $location );
-			$html = $renderer->render_template(
-				$products,
-				$recommendations,
-				$location,
-				array_merge( $location_settings, $args )
-			);
+			$merged_args = array_merge( $location_settings, $args );
+
+			// Partial mode: render only product items, not the full widget.
+			$partial = (bool) $request->get_param( 'partial' );
+			if ( $partial ) {
+				$merged_args['load_more'] = false; // Don't include button in partial.
+				$html = $renderer->render_product_items( $products, $recommendations, $location, $merged_args );
+			} else {
+				$html = $renderer->render_template( $products, $recommendations, $location, $merged_args );
+			}
 
 			$response = new \WP_REST_Response(
 				array(
 					'html'   => $html,
+					'count'  => count( $products ),
+					'ids'    => array_map( function ( $p ) { return $p->get_id(); }, $products ),
 					'engine' => $engine,
 					'cached' => false,
 				),

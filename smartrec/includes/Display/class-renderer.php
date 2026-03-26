@@ -339,6 +339,65 @@ class Renderer {
 	 * @param string $layout Layout name.
 	 * @return string|false Template path or false.
 	 */
+
+	/**
+	 * Render only the product item cards (no wrapper, title, or load-more button).
+	 * Used by the REST API for partial/load-more responses.
+	 *
+	 * @param array  $products        WC_Product objects.
+	 * @param array  $recommendations Raw recommendation data.
+	 * @param string $location        Location ID.
+	 * @param array  $args            Display arguments.
+	 * @return string HTML of product items only.
+	 */
+	public function render_product_items( array $products, array $recommendations, string $location, array $args ): string {
+		if ( empty( $products ) ) {
+			return '';
+		}
+
+		$use_wc = ! empty( $args['use_wc_template'] );
+		$layout = $args['layout'] ?? 'grid';
+
+		// Build reason map.
+		$reasons = array();
+		foreach ( $recommendations as $rec ) {
+			$reasons[ $rec['product_id'] ] = $rec['reason'] ?? '';
+		}
+
+		$settings = wp_parse_args( $args, array(
+			'show_price'       => $this->settings->get( 'show_price', true ),
+			'show_rating'      => $this->settings->get( 'show_rating', true ),
+			'show_add_to_cart' => $this->settings->get( 'show_add_to_cart', true ),
+			'show_reason'      => $this->settings->get( 'show_reason', true ),
+			'use_wc_template'  => $use_wc,
+		) );
+
+		ob_start();
+
+		if ( $use_wc ) {
+			// Render WC product cards.
+			foreach ( $products as $product ) {
+				$GLOBALS['post']    = get_post( $product->get_id() );
+				$GLOBALS['product'] = $product;
+				setup_postdata( $GLOBALS['post'] );
+				wc_get_template_part( 'content', 'product' );
+			}
+			wp_reset_postdata();
+		} else {
+			// Render SmartRec product cards using the partial template.
+			$partial_template = SMARTREC_PLUGIN_DIR . 'templates/partials/product-card.php';
+			if ( file_exists( $partial_template ) ) {
+				foreach ( $products as $product ) {
+					$product_id = $product->get_id();
+					$reason     = $reasons[ $product_id ] ?? '';
+					include $partial_template;
+				}
+			}
+		}
+
+		return ob_get_clean();
+	}
+
 	private function locate_template( string $layout ) {
 		$template_name = 'recommendation-' . sanitize_file_name( $layout ) . '.php';
 		$template      = apply_filters( 'smartrec_template', '', '', $layout );

@@ -54,17 +54,22 @@ class Renderer {
 	 * @return void
 	 */
 	public function enqueue_assets() {
-		wp_enqueue_style(
-			'smartrec-frontend',
-			SMARTREC_PLUGIN_URL . 'assets/css/smartrec-frontend.css',
-			array(),
-			SMARTREC_VERSION
-		);
+		// Load CSS inline to avoid browser/server caching of stale file.
+		$css_file = SMARTREC_PLUGIN_DIR . 'assets/css/smartrec-frontend.css';
+		$css      = '';
 
-		// Add dynamic inline styles from admin customization.
-		$inline_css = $this->build_dynamic_css();
-		if ( ! empty( $inline_css ) ) {
-			wp_add_inline_style( 'smartrec-frontend', $inline_css );
+		if ( file_exists( $css_file ) ) {
+			$css .= file_get_contents( $css_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		}
+
+		// Append dynamic inline styles from admin customization.
+		$css .= "\n" . $this->build_dynamic_css();
+
+		if ( ! empty( $css ) ) {
+			// Register an empty handle so wp_add_inline_style works, then print inline.
+			wp_register_style( 'smartrec-frontend', false, array(), SMARTREC_VERSION );
+			wp_enqueue_style( 'smartrec-frontend' );
+			wp_add_inline_style( 'smartrec-frontend', $css );
 		}
 
 		if ( $this->settings->get( 'ajax_loading', false ) ) {
@@ -155,9 +160,30 @@ class Renderer {
 		}
 		$css = ':root{' . implode( ';', $vars ) . '}';
 
-		// Inherit theme fonts — use the body font for all SmartRec text.
+		// Also apply admin colors directly on elements with !important
+		// to guarantee they override any media queries or theme CSS.
+		$direct_rules = array();
+
+		$card_bg   = $defaults['--smartrec-card-bg'];
+		$card_text = $defaults['--smartrec-card-text'];
+		$btn_bg    = $defaults['--smartrec-btn-bg'];
+		$btn_text  = $defaults['--smartrec-btn-text'];
+		$badge_bg  = $defaults['--smartrec-badge-bg'];
+		$badge_clr = $defaults['--smartrec-badge-color'];
+		$title_clr = $defaults['--smartrec-title-color'];
+		$accent    = $defaults['--smartrec-accent'];
+
+		$direct_rules[] = '.smartrec-widget__item{background:' . $card_bg . ' !important;color:' . $card_text . ' !important}';
+		$direct_rules[] = '.smartrec-widget__title{color:' . $title_clr . ' !important}';
+		$direct_rules[] = '.smartrec-widget__badge{background:' . $badge_bg . ' !important;color:' . $badge_clr . ' !important}';
+		$direct_rules[] = '.smartrec-widget__item-price{color:' . $accent . ' !important}';
+		$direct_rules[] = '.smartrec-widget__item-button .button,.smartrec-widget__item-button a,.smartrec-widget__add-to-cart{background:' . $btn_bg . ' !important;color:' . $btn_text . ' !important}';
+
+		$css .= "\n" . implode( "\n", $direct_rules );
+
+		// Inherit theme fonts.
 		if ( $this->settings->get( 'inherit_theme_fonts', true ) ) {
-			$css .= '.smartrec-widget,.smartrec-widget__title,.smartrec-widget__item-title{font-family:inherit}';
+			$css .= "\n" . '.smartrec-widget,.smartrec-widget__title,.smartrec-widget__item-title{font-family:inherit}';
 		}
 
 		// Custom CSS from admin.

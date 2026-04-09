@@ -104,6 +104,7 @@ class GutenbergBlock {
 				'showAddToCart'  => array( 'type' => 'boolean', 'default' => true ),
 				'showReason'     => array( 'type' => 'boolean', 'default' => false ),
 				'category'       => array( 'type' => 'string', 'default' => '' ),
+				'order'          => array( 'type' => 'string', 'default' => 'score' ),
 			),
 		) );
 	}
@@ -148,6 +149,7 @@ class GutenbergBlock {
 			'show_rating'    => ! empty( $attributes['showRating'] ) ? 'yes' : 'no',
 			'show_add_to_cart' => ! empty( $attributes['showAddToCart'] ) ? 'yes' : 'no',
 			'show_reason'    => ! empty( $attributes['showReason'] ) ? 'yes' : 'no',
+			'order'          => $attributes['order'] ?? 'score',
 		);
 
 		if ( ! empty( $attributes['category'] ) ) {

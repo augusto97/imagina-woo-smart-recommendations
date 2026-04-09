@@ -105,12 +105,18 @@ class RecommendationManager {
 			$engine_limit = max( $engine_limit * 5, 40 );
 		}
 
+		$order = $args['order'] ?? 'score';
+
 		// Check cache only when NOT excluding (normal page load).
 		if ( empty( $exclude_ids ) && $this->settings->get( 'cache_enabled', true ) ) {
 			$cache_key = $this->build_cache_key( $location, $productId, $args );
 			$cache_key = apply_filters( 'smartrec_cache_key', $cache_key, $location, $productId );
 			$cached    = $this->cache->get( $cache_key );
 			if ( false !== $cached ) {
+				// Shuffle after cache read so each page load shows different order.
+				if ( 'random' === $order ) {
+					shuffle( $cached );
+				}
 				return $cached;
 			}
 		}
@@ -170,6 +176,11 @@ class RecommendationManager {
 
 		// Apply global exclude list.
 		$merged = $this->apply_exclusions( $merged, $location );
+
+		// Apply ordering before slicing.
+		if ( 'random' === $order ) {
+			shuffle( $merged );
+		}
 
 		// Limit to requested amount.
 		$merged = array_slice( $merged, 0, $requested_limit );

@@ -83,6 +83,7 @@ class Shortcode {
 				'show_rating'    => 'yes',
 				'show_add_to_cart' => 'yes',
 				'show_reason'    => 'yes',
+				'order'          => 'score',
 				'css_class'      => '',
 			),
 			$atts,
@@ -108,6 +109,7 @@ class Shortcode {
 			'show_rating'    => 'yes' === $atts['show_rating'],
 			'show_add_to_cart' => 'yes' === $atts['show_add_to_cart'],
 			'show_reason'    => 'yes' === $atts['show_reason'],
+			'order'          => in_array( $atts['order'], array( 'score', 'random' ), true ) ? $atts['order'] : 'score',
 			'css_class'      => sanitize_html_class( $atts['css_class'] ),
 		);
 
@@ -228,6 +230,7 @@ class Shortcode {
 				'show_add_to_cart' => 'yes',
 				'show_reason'      => 'no',
 				'load_more'        => 0,
+				'order'            => 'score',
 				'css_class'        => '',
 			),
 			$atts,
@@ -255,6 +258,7 @@ class Shortcode {
 			'show_add_to_cart' => 'yes' === $atts['show_add_to_cart'],
 			'show_reason'      => 'yes' === $atts['show_reason'],
 			'css_class'        => sanitize_html_class( $atts['css_class'] ),
+			'order'            => in_array( $atts['order'], array( 'score', 'random' ), true ) ? $atts['order'] : 'score',
 		);
 
 		$load_more = (int) $atts['load_more'];

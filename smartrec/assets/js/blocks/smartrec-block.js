@@ -129,11 +129,20 @@
 					el( ToggleControl, { label: __( 'Reason Badge', 'smartrec' ), checked: a.showReason, onChange: function ( v ) { set( { showReason: v } ); } } )
 				),
 
-				el( PanelBody, { title: __( 'Load More', 'smartrec' ), initialOpen: false },
+				el( PanelBody, { title: __( 'Load More & Order', 'smartrec' ), initialOpen: false },
 					el( RangeControl, {
 						label: __( 'Products per click (0 = off)', 'smartrec' ),
 						value: a.loadMore, onChange: function ( v ) { set( { loadMore: v } ); },
 						min: 0, max: 20,
+					} ),
+					el( SelectControl, {
+						label: __( 'Product Order', 'smartrec' ),
+						value: a.order,
+						options: [
+							{ value: 'score', label: __( 'By relevance (default)', 'smartrec' ) },
+							{ value: 'random', label: __( 'Random (changes on each page load)', 'smartrec' ) },
+						],
+						onChange: function ( v ) { set( { order: v } ); },
 					} )
 				)
 			);
@@ -145,6 +154,7 @@
 			details.push( a.layout );
 			if ( catName ) { details.push( catName ); }
 			if ( a.loadMore > 0 ) { details.push( __( 'Load More', 'smartrec' ) + ': +' + a.loadMore ); }
+			if ( a.order === 'random' ) { details.push( __( 'Random order', 'smartrec' ) ); }
 
 			var displayTitle = a.title || typeName;
 			if ( catName ) {

@@ -258,6 +258,9 @@ class Settings {
 
 			// Per-location columns.
 			'location_columns'          => array(),
+
+			// Per-location order (score or random).
+			'location_order'            => array(),
 		);
 	}
 
@@ -282,6 +285,7 @@ class Settings {
 		$load_more_map = $this->get( 'location_load_more', array() );
 		$load_more_global = $this->get( 'load_more_enabled', false );
 		$load_more_count  = (int) $this->get( 'load_more_count', 4 );
+		$order_map        = $this->get( 'location_order', array() );
 
 		return array(
 			'enabled'         => $this->get( 'location_' . $location, false ),
@@ -294,6 +298,7 @@ class Settings {
 			'columns_mobile'  => ! empty( $cols_mobile[ $location ] ) ? (int) $cols_mobile[ $location ] : 1,
 			'load_more'       => ! empty( $load_more_map[ $location ] ) ? true : $load_more_global,
 			'load_more_count' => ! empty( $load_more_map[ $location ] ) ? (int) $load_more_map[ $location ] : $load_more_count,
+			'order'           => $order_map[ $location ] ?? 'score',
 		);
 	}
 

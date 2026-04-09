@@ -366,6 +366,7 @@ class SettingsPage {
 		$loc_cols_tablet = $this->settings->get( 'location_columns_tablet', array() );
 		$loc_cols_mobile = $this->settings->get( 'location_columns_mobile', array() );
 		$loc_load_more = $this->settings->get( 'location_load_more', array() );
+		$loc_order     = $this->settings->get( 'location_order', array() );
 		?>
 		<div class="smartrec-section">
 			<h3 class="smartrec-section__title"><?php esc_html_e( 'Display Locations', 'smartrec' ); ?></h3>
@@ -382,6 +383,7 @@ class SettingsPage {
 					$cur_cols_tablet = $loc_cols_tablet[ $key ] ?? '';
 					$cur_cols_mobile = $loc_cols_mobile[ $key ] ?? '';
 					$cur_load_more   = $loc_load_more[ $key ] ?? '';
+					$cur_order       = $loc_order[ $key ] ?? 'score';
 					?>
 					<div class="smartrec-loc <?php echo $enabled ? 'smartrec-loc--active' : ''; ?>">
 						<div class="smartrec-loc__header" tabindex="0" role="button">
@@ -451,6 +453,15 @@ class SettingsPage {
 									<td>
 										<input type="number" name="smartrec_loc_load_more[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cur_load_more ); ?>" min="0" max="20" placeholder="0" class="small-text">
 										<p class="description"><?php esc_html_e( 'Products per click. 0 or empty = disabled. Not available for slider.', 'smartrec' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th><?php esc_html_e( 'Order', 'smartrec' ); ?></th>
+									<td>
+										<select name="smartrec_loc_order[<?php echo esc_attr( $key ); ?>]">
+											<option value="score" <?php selected( $cur_order, 'score' ); ?>><?php esc_html_e( 'By relevance', 'smartrec' ); ?></option>
+											<option value="random" <?php selected( $cur_order, 'random' ); ?>><?php esc_html_e( 'Random (different on each page load)', 'smartrec' ); ?></option>
+										</select>
 									</td>
 								</tr>
 							</table>

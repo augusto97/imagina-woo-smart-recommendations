@@ -687,12 +687,18 @@ class AdminPage {
 			}
 		}
 
-		// Load more per location.
+		// Load more and order per location.
 		$loc_load_more = array();
+		$loc_order     = array();
 		foreach ( $location_keys as $loc ) {
 			$lm_val = isset( $_POST['smartrec_loc_load_more'][ $loc ] ) ? absint( $_POST['smartrec_loc_load_more'][ $loc ] ) : 0;
 			if ( $lm_val > 0 && $lm_val <= 20 ) {
 				$loc_load_more[ $loc ] = $lm_val;
+			}
+
+			$order_val = isset( $_POST['smartrec_loc_order'][ $loc ] ) ? sanitize_text_field( wp_unslash( $_POST['smartrec_loc_order'][ $loc ] ) ) : 'score';
+			if ( in_array( $order_val, array( 'score', 'random' ), true ) ) {
+				$loc_order[ $loc ] = $order_val;
 			}
 		}
 
@@ -704,6 +710,7 @@ class AdminPage {
 		$this->settings->set( 'location_columns_tablet', $loc_cols_tablet );
 		$this->settings->set( 'location_columns_mobile', $loc_cols_mobile );
 		$this->settings->set( 'location_load_more', $loc_load_more );
+		$this->settings->set( 'location_order', $loc_order );
 
 		// Appearance / style settings.
 		$style_fields = array(

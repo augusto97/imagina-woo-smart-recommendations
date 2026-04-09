@@ -31,16 +31,20 @@
 	];
 
 	registerBlockType( 'smartrec/recommendations', {
-		title: __( 'SmartRec Recommendations', 'smartrec' ),
+		title: 'SmartRec — ' + __( 'Product Recommendations', 'smartrec' ),
 		description: __( 'Display intelligent product recommendations. Choose from multiple engines like Trending, Recently Viewed, Personalized, and more.', 'smartrec' ),
-		category: 'woocommerce',
-		icon: el( 'svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: 24, height: 24 },
-			el( 'path', { fill: 'currentColor', d: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' } )
-		),
+		category: 'widgets',
+		icon: {
+			src: 'products',
+			foreground: '#7f54b3',
+		},
 		keywords: [
+			'smartrec',
 			__( 'products', 'smartrec' ),
 			__( 'recommendations', 'smartrec' ),
 			__( 'woocommerce', 'smartrec' ),
+			__( 'related', 'smartrec' ),
+			__( 'trending', 'smartrec' ),
 		],
 		supports: {
 			html: false,

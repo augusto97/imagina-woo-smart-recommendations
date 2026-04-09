@@ -1,0 +1,147 @@
+<?php
+/**
+ * Gutenberg block registration.
+ *
+ * @package SmartRec\Display
+ */
+
+namespace SmartRec\Display;
+
+use SmartRec\Core\Settings;
+use SmartRec\Engines\RecommendationManager;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Class GutenbergBlock
+ *
+ * Registers the SmartRec Gutenberg block with server-side rendering.
+ */
+class GutenbergBlock {
+
+	/**
+	 * Recommendation manager.
+	 *
+	 * @var RecommendationManager
+	 */
+	private $manager;
+
+	/**
+	 * Settings.
+	 *
+	 * @var Settings
+	 */
+	private $settings;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param RecommendationManager $manager  Recommendation manager.
+	 * @param Settings              $settings Settings.
+	 */
+	public function __construct( RecommendationManager $manager, Settings $settings ) {
+		$this->manager  = $manager;
+		$this->settings = $settings;
+
+		add_action( 'init', array( $this, 'register_block' ) );
+	}
+
+	/**
+	 * Register the Gutenberg block.
+	 *
+	 * @return void
+	 */
+	public function register_block() {
+		if ( ! function_exists( 'register_block_type' ) ) {
+			return;
+		}
+
+		wp_register_script(
+			'smartrec-block-editor',
+			SMARTREC_PLUGIN_URL . 'assets/js/blocks/smartrec-block.js',
+			array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-server-side-render', 'wp-i18n' ),
+			SMARTREC_VERSION,
+			true
+		);
+
+		register_block_type( 'smartrec/recommendations', array(
+			'api_version'     => 2,
+			'editor_script'   => 'smartrec-block-editor',
+			'render_callback' => array( $this, 'render_block' ),
+			'attributes'      => array(
+				'blockType'      => array( 'type' => 'string', 'default' => 'for_you' ),
+				'title'          => array( 'type' => 'string', 'default' => '' ),
+				'limit'          => array( 'type' => 'number', 'default' => 8 ),
+				'columns'        => array( 'type' => 'number', 'default' => 4 ),
+				'columnsTablet'  => array( 'type' => 'number', 'default' => 2 ),
+				'columnsMobile'  => array( 'type' => 'number', 'default' => 1 ),
+				'layout'         => array( 'type' => 'string', 'default' => 'grid' ),
+				'loadMore'       => array( 'type' => 'number', 'default' => 0 ),
+				'showPrice'      => array( 'type' => 'boolean', 'default' => true ),
+				'showRating'     => array( 'type' => 'boolean', 'default' => true ),
+				'showAddToCart'  => array( 'type' => 'boolean', 'default' => true ),
+				'showReason'     => array( 'type' => 'boolean', 'default' => false ),
+				'category'       => array( 'type' => 'string', 'default' => '' ),
+			),
+		) );
+	}
+
+	/**
+	 * Server-side render callback.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return string
+	 */
+	public function render_block( $attributes ) {
+		$type_map = array(
+			'recently_viewed'  => array( 'engine' => 'recently_viewed', 'title' => __( 'Recently viewed', 'smartrec' ) ),
+			'for_you'          => array( 'engine' => 'personalized_mix', 'title' => __( 'Recommended for you', 'smartrec' ) ),
+			'trending'         => array( 'engine' => 'trending', 'title' => __( 'Trending now', 'smartrec' ) ),
+			'similar_to_viewed' => array( 'engine' => 'similar', 'title' => __( 'Related to what you viewed', 'smartrec' ) ),
+			'bought_together'  => array( 'engine' => 'bought_together', 'title' => __( 'Customers also bought', 'smartrec' ) ),
+			'new_arrivals'     => array( 'engine' => 'trending', 'title' => __( 'New arrivals', 'smartrec' ) ),
+			'custom'           => array( 'engine' => '', 'title' => __( 'Recommended products', 'smartrec' ) ),
+		);
+
+		$block_type = $attributes['blockType'] ?? 'for_you';
+		$preset     = $type_map[ $block_type ] ?? $type_map['for_you'];
+
+		$title = ! empty( $attributes['title'] ) ? $attributes['title'] : $preset['title'];
+
+		// Build shortcode attributes string.
+		$shortcode_tag = 'smartrec';
+		if ( 'custom' !== $block_type && isset( $type_map[ $block_type ] ) ) {
+			$shortcode_tag = 'smartrec_' . $block_type;
+		}
+
+		$atts = array(
+			'title'          => $title,
+			'limit'          => (int) ( $attributes['limit'] ?? 8 ),
+			'columns'        => (int) ( $attributes['columns'] ?? 4 ),
+			'columns_tablet' => (int) ( $attributes['columnsTablet'] ?? 2 ),
+			'columns_mobile' => (int) ( $attributes['columnsMobile'] ?? 1 ),
+			'layout'         => $attributes['layout'] ?? 'grid',
+			'load_more'      => (int) ( $attributes['loadMore'] ?? 0 ),
+			'show_price'     => ! empty( $attributes['showPrice'] ) ? 'yes' : 'no',
+			'show_rating'    => ! empty( $attributes['showRating'] ) ? 'yes' : 'no',
+			'show_add_to_cart' => ! empty( $attributes['showAddToCart'] ) ? 'yes' : 'no',
+			'show_reason'    => ! empty( $attributes['showReason'] ) ? 'yes' : 'no',
+		);
+
+		if ( ! empty( $attributes['category'] ) ) {
+			$atts['category'] = $attributes['category'];
+		}
+
+		if ( 'custom' === $block_type && ! empty( $preset['engine'] ) ) {
+			$atts['engine'] = $preset['engine'];
+		}
+
+		// Build shortcode string.
+		$parts = array();
+		foreach ( $atts as $key => $value ) {
+			$parts[] = $key . '="' . esc_attr( $value ) . '"';
+		}
+
+		return do_shortcode( '[' . $shortcode_tag . ' ' . implode( ' ', $parts ) . ']' );
+	}
+}

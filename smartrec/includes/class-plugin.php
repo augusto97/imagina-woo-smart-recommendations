@@ -13,6 +13,7 @@ use SmartRec\Display\Renderer;
 use SmartRec\Display\WooCommerceHooks;
 use SmartRec\Display\Shortcode;
 use SmartRec\Display\Widget;
+use SmartRec\Display\GutenbergBlock;
 use SmartRec\Cache\CacheManager;
 use SmartRec\API\RestAPI;
 use SmartRec\Admin\AdminPage;
@@ -121,6 +122,7 @@ class Plugin {
 		new Renderer( $this->recommendation_manager, $this->settings );
 		new WooCommerceHooks( $this->recommendation_manager, $this->settings );
 		new Shortcode( $this->recommendation_manager, $this->settings );
+		new GutenbergBlock( $this->recommendation_manager, $this->settings );
 
 		// REST API.
 		new RestAPI( $this->recommendation_manager, $this->tracker, $this->settings );

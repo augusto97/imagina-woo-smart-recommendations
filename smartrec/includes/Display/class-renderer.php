@@ -386,7 +386,12 @@ class Renderer {
 		ob_start();
 
 		if ( $use_wc ) {
-			// Render WC product cards.
+			// Set WC loop properties so themes apply correct grid styles.
+			$columns = $args['columns'] ?? 4;
+			wc_set_loop_prop( 'columns', $columns );
+			wc_set_loop_prop( 'name', 'smartrec' );
+			wc_set_loop_prop( 'is_paginated', false );
+
 			foreach ( $products as $product ) {
 				$GLOBALS['post']    = get_post( $product->get_id() );
 				$GLOBALS['product'] = $product;
@@ -399,7 +404,6 @@ class Renderer {
 			$partial_template = SMARTREC_PLUGIN_DIR . 'templates/partials/product-card.php';
 			if ( file_exists( $partial_template ) ) {
 				foreach ( $products as $product ) {
-					// Set WC globals so woocommerce_template_loop_add_to_cart() works.
 					$GLOBALS['post']    = get_post( $product->get_id() );
 					$GLOBALS['product'] = $product;
 					setup_postdata( $GLOBALS['post'] );

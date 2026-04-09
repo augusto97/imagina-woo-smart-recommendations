@@ -207,7 +207,15 @@
 				);
 			}
 
-			return el( 'div', { className: props.className },
+			return el( 'div', {
+					className: props.className,
+					/* Prevent clicks on product links from navigating away from the editor */
+					onClick: function ( e ) {
+						var link = e.target.closest( 'a' );
+						if ( link ) { e.preventDefault(); }
+					},
+					style: { pointerEvents: 'auto' },
+				},
 				inspectorControls,
 				preview
 			);

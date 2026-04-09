@@ -72,9 +72,23 @@ class GutenbergBlock {
 			true
 		);
 
+		// Load frontend CSS in the editor so preview looks correct.
+		wp_register_style(
+			'smartrec-block-editor-style',
+			false,
+			array(),
+			SMARTREC_VERSION
+		);
+
+		$css_file = SMARTREC_PLUGIN_DIR . 'assets/css/smartrec-frontend.css';
+		if ( file_exists( $css_file ) ) {
+			wp_add_inline_style( 'smartrec-block-editor-style', file_get_contents( $css_file ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		}
+
 		register_block_type( 'smartrec/recommendations', array(
 			'api_version'     => 2,
 			'editor_script'   => 'smartrec-block-editor',
+			'editor_style'    => 'smartrec-block-editor-style',
 			'render_callback' => array( $this, 'render_block' ),
 			'attributes'      => array(
 				'blockType'      => array( 'type' => 'string', 'default' => 'for_you' ),

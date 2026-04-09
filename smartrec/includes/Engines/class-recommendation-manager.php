@@ -144,9 +144,18 @@ class RecommendationManager {
 
 		do_action( 'smartrec_after_recommendations', $location, $productId, $merged );
 
-		// Cache results.
+		// Cache results. Personalized engines use shorter TTL for freshness.
 		if ( $this->settings->get( 'cache_enabled', true ) && ! empty( $merged ) ) {
-			$ttl = $this->settings->get_cache_ttl( $location );
+			$engine_id = $args['engine'] ?? 'default';
+			$personalized_engines = array( 'personalized_mix', 'recently_viewed', 'similar', 'bought_together' );
+			$is_personalized = in_array( $engine_id, $personalized_engines, true ) || 'default' === $engine_id;
+
+			if ( $is_personalized && ( get_current_user_id() > 0 || ! empty( $sessionId ) ) ) {
+				$ttl = 300; // 5 minutes for personalized — keeps results fresh.
+			} else {
+				$ttl = $this->settings->get_cache_ttl( $location );
+			}
+
 			$ttl = apply_filters( 'smartrec_cache_ttl', $ttl, $location );
 			$this->cache->set( $cache_key, $merged, $ttl );
 		}

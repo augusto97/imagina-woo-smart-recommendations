@@ -66,6 +66,11 @@ class SimilarProducts implements RecommendationEngineInterface {
 	 * {@inheritdoc}
 	 */
 	public function getRecommendations( int $productId, int $userId, string $sessionId, array $args = array() ): array {
+		// If no product specified (e.g. homepage shortcode), find the last viewed product.
+		if ( $productId <= 0 && ! empty( $sessionId ) ) {
+			$productId = $this->get_last_viewed_product( $userId, $sessionId );
+		}
+
 		if ( $productId <= 0 ) {
 			return array();
 		}
@@ -284,6 +289,40 @@ class SimilarProducts implements RecommendationEngineInterface {
 	 * @param array $scored Scored products.
 	 * @return array
 	 */
+	/**
+	 * Get the last product viewed by this user/session.
+	 *
+	 * @param int    $userId    User ID.
+	 * @param string $sessionId Session ID.
+	 * @return int Product ID or 0.
+	 */
+	private function get_last_viewed_product( int $userId, string $sessionId ): int {
+		global $wpdb;
+
+		$where = '';
+		$args  = array();
+
+		if ( $userId > 0 ) {
+			$where = 'WHERE (user_id = %d OR session_id = %s) AND event_type = %s';
+			$args  = array( $userId, $sessionId, 'view' );
+		} else {
+			$where = 'WHERE session_id = %s AND event_type = %s';
+			$args  = array( $sessionId, 'view' );
+		}
+
+		$args[] = 1;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$product_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT product_id FROM {$wpdb->prefix}smartrec_events {$where} ORDER BY created_at DESC LIMIT %d",
+				$args
+			)
+		);
+
+		return (int) $product_id;
+	}
+
 	private function normalize_scores( array $scored ): array {
 		if ( empty( $scored ) ) {
 			return $scored;

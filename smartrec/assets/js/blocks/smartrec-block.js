@@ -1,10 +1,18 @@
 ( function () {
 	'use strict';
 
+	/* Bail if block editor API not available */
+	if ( ! wp || ! wp.blocks || ! wp.element || ! wp.blockEditor ) {
+		return;
+	}
+
 	var el                = wp.element.createElement;
 	var registerBlockType = wp.blocks.registerBlockType;
 	var InspectorControls = wp.blockEditor.InspectorControls;
-	var ServerSideRender  = wp.serverSideRender || wp.components.ServerSideRender;
+	var ServerSideRender  = ( wp.serverSideRender && wp.serverSideRender.default )
+	                     || wp.serverSideRender
+	                     || ( wp.editor && wp.editor.ServerSideRender )
+	                     || null;
 	var PanelBody         = wp.components.PanelBody;
 	var SelectControl     = wp.components.SelectControl;
 	var TextControl       = wp.components.TextControl;
@@ -163,20 +171,41 @@
 			);
 
 			/* Preview */
-			var preview = el( ServerSideRender, {
-				block: 'smartrec/recommendations',
-				attributes: attributes,
-				EmptyResponsePlaceholder: function () {
-					return el( Placeholder, {
-						icon: 'star-filled',
-						label: __( 'SmartRec Recommendations', 'smartrec' ),
+			var preview;
+			var selectedType = blockTypes.filter( function(t) { return t.value === attributes.blockType; } )[0];
+			var typeName = selectedType ? selectedType.label : attributes.blockType;
+
+			if ( ServerSideRender ) {
+				preview = el( ServerSideRender, {
+					block: 'smartrec/recommendations',
+					attributes: attributes,
+					EmptyResponsePlaceholder: function () {
+						return el( Placeholder, {
+							icon: 'products',
+							label: 'SmartRec',
+						},
+							el( 'p', {},
+								__( 'No recommendations available yet. Products will appear on the frontend once there is tracking data.', 'smartrec' )
+							)
+						);
 					},
-						el( 'p', {},
-							__( 'No recommendations available yet. Products will appear once there is tracking data.', 'smartrec' )
-						)
-					);
+				} );
+			} else {
+				/* Fallback if ServerSideRender not available */
+				preview = el( Placeholder, {
+					icon: 'products',
+					label: 'SmartRec — ' + typeName,
 				},
-			} );
+					el( 'p', {},
+						__( 'Product recommendations will be rendered on the frontend.', 'smartrec' )
+					),
+					el( 'p', { style: { fontSize: '12px', color: '#8c8f94' } },
+						attributes.limit + ' ' + __( 'products', 'smartrec' ) + ' · ' +
+						attributes.columns + ' ' + __( 'columns', 'smartrec' ) + ' · ' +
+						attributes.layout
+					)
+				);
+			}
 
 			return el( 'div', { className: props.className },
 				inspectorControls,

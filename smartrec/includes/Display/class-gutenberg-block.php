@@ -43,7 +43,9 @@ class GutenbergBlock {
 		$this->manager  = $manager;
 		$this->settings = $settings;
 
-		add_action( 'init', array( $this, 'register_block' ) );
+		// Register immediately — this constructor runs during 'init' hook
+		// so adding another 'init' action would be too late.
+		$this->register_block();
 	}
 
 	/**
@@ -56,10 +58,16 @@ class GutenbergBlock {
 			return;
 		}
 
+		$deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' );
+		// wp-server-side-render was added in WP 5.3.
+		if ( wp_script_is( 'wp-server-side-render', 'registered' ) ) {
+			$deps[] = 'wp-server-side-render';
+		}
+
 		wp_register_script(
 			'smartrec-block-editor',
 			SMARTREC_PLUGIN_URL . 'assets/js/blocks/smartrec-block.js',
-			array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-server-side-render', 'wp-i18n' ),
+			$deps,
 			SMARTREC_VERSION,
 			true
 		);

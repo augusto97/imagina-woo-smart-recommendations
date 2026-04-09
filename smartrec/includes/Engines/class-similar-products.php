@@ -89,7 +89,13 @@ class SimilarProducts implements RecommendationEngineInterface {
 		// Query candidate products.
 		$candidates = $this->get_candidates( $categories, $tags, $exclude, $limit * 5 );
 
-		// Score candidates.
+		// Batch-prime cache: 2-3 queries instead of N individual ones.
+		if ( ! empty( $candidates ) ) {
+			_prime_post_caches( $candidates, true );
+			update_meta_cache( 'post', $candidates );
+		}
+
+		// Score candidates (all wc_get_product calls now hit in-memory cache).
 		$scored = array();
 		foreach ( $candidates as $candidate_id ) {
 			$candidate = wc_get_product( $candidate_id );

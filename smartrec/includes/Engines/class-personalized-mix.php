@@ -113,7 +113,14 @@ class PersonalizedMix implements RecommendationEngineInterface {
 			}
 		}
 
-		// Re-score based on user profile.
+		// Batch-prime all product IDs from all engines at once.
+		$all_ids = array_unique( array_column( $all_results, 'product_id' ) );
+		if ( ! empty( $all_ids ) ) {
+			_prime_post_caches( $all_ids, true );
+			update_meta_cache( 'post', $all_ids );
+		}
+
+		// Re-score based on user profile (wc_get_product now hits memory cache).
 		$scored = $this->personalize_scores( $all_results, $profile );
 
 		// Merge and deduplicate (keep highest score).

@@ -279,6 +279,14 @@ class RestAPI {
 
 		if ( 'html' === $format ) {
 			$renderer = new \SmartRec\Display\Renderer( $this->manager, $this->settings );
+
+			// Batch-prime cache for all product IDs at once.
+			$rec_ids = array_column( $recommendations, 'product_id' );
+			if ( ! empty( $rec_ids ) ) {
+				_prime_post_caches( $rec_ids, true );
+				update_meta_cache( 'post', $rec_ids );
+			}
+
 			$products = array();
 			foreach ( $recommendations as $rec ) {
 				$product = wc_get_product( $rec['product_id'] );
@@ -315,6 +323,13 @@ class RestAPI {
 				200
 			);
 		} else {
+			// Batch-prime for JSON response.
+			$rec_ids_json = array_column( $recommendations, 'product_id' );
+			if ( ! empty( $rec_ids_json ) ) {
+				_prime_post_caches( $rec_ids_json, true );
+				update_meta_cache( 'post', $rec_ids_json );
+			}
+
 			$products_data = array();
 			foreach ( $recommendations as $rec ) {
 				$product = wc_get_product( $rec['product_id'] );

@@ -128,7 +128,11 @@ class RecommendationManager {
 		// Apply global filters.
 		$merged = apply_filters( 'smartrec_filter_results', $merged, $location, $productId );
 
-		// Validate products.
+		// Batch-prime WP object cache for all product IDs at once.
+		// This converts N individual wc_get_product() queries into 2-3 batch queries.
+		$this->prime_product_cache( $merged );
+
+		// Validate products (now hits in-memory cache, ~0 DB queries).
 		$merged = $this->validate_products( $merged );
 
 		// Apply global exclude list.
@@ -226,6 +230,34 @@ class RecommendationManager {
 	}
 
 	/**
+	 * Batch-prime WP object cache for a list of product IDs.
+	 *
+	 * Loads all post data, post meta, and term data in 2-3 bulk queries
+	 * instead of N individual queries. Subsequent wc_get_product() calls
+	 * hit the in-memory cache with zero DB queries.
+	 *
+	 * @param array $results Recommendation results with 'product_id' keys.
+	 * @return void
+	 */
+	private function prime_product_cache( array $results ) {
+		$ids = array_unique( array_column( $results, 'product_id' ) );
+		if ( empty( $ids ) ) {
+			return;
+		}
+
+		// 1 query: Load all post data into WP object cache.
+		_prime_post_caches( $ids, true );
+
+		// 1 query: Load all postmeta into cache.
+		update_meta_cache( 'post', $ids );
+
+		// 1 query: Load all term relationships into cache.
+		if ( function_exists( 'update_object_term_cache' ) ) {
+			update_object_term_cache( $ids, 'product' );
+		}
+	}
+
+	/**
 	 * Validate that all recommended products are valid.
 	 *
 	 * @param array $results Results.
@@ -282,12 +314,25 @@ class RecommendationManager {
 	 * @return string
 	 */
 	private function build_cache_key( string $location, int $productId, array $args = array() ): string {
+		$engine = $args['engine'] ?? 'default';
+
+		// Personalized engines need per-user cache; others are shared.
+		$personalized_engines = array( 'personalized_mix', 'recently_viewed' );
+		$user_part = '0';
+		if ( in_array( $engine, $personalized_engines, true ) || 'default' === $engine ) {
+			$user_id = get_current_user_id();
+			$user_part = $user_id > 0
+				? 'u' . $user_id
+				: 's' . substr( md5( $_COOKIE['smartrec_session'] ?? '' ), 0, 8 );
+		}
+
 		$parts = array(
 			'smartrec',
 			$location,
 			$productId,
-			$args['engine'] ?? 'default',
+			$engine,
 			$args['limit'] ?? $this->settings->get( 'default_limit', 8 ),
+			$user_part,
 		);
 
 		return implode( '_', $parts );

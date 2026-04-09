@@ -58,7 +58,7 @@ class GutenbergBlock {
 			return;
 		}
 
-		$deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' );
+		$deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'wp-api-fetch' );
 		// wp-server-side-render was added in WP 5.3.
 		if ( wp_script_is( 'wp-server-side-render', 'registered' ) ) {
 			$deps[] = 'wp-server-side-render';

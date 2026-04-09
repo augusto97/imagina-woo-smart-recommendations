@@ -1,24 +1,16 @@
 ( function () {
 	'use strict';
 
-	/* Bail if block editor API not available */
-	if ( ! wp || ! wp.blocks || ! wp.element || ! wp.blockEditor ) {
-		return;
-	}
+	if ( ! wp || ! wp.blocks || ! wp.element || ! wp.blockEditor ) { return; }
 
 	var el                = wp.element.createElement;
 	var registerBlockType = wp.blocks.registerBlockType;
 	var InspectorControls = wp.blockEditor.InspectorControls;
-	var ServerSideRender  = ( wp.serverSideRender && wp.serverSideRender.default )
-	                     || wp.serverSideRender
-	                     || ( wp.editor && wp.editor.ServerSideRender )
-	                     || null;
 	var PanelBody         = wp.components.PanelBody;
 	var SelectControl     = wp.components.SelectControl;
 	var TextControl       = wp.components.TextControl;
 	var RangeControl      = wp.components.RangeControl;
 	var ToggleControl     = wp.components.ToggleControl;
-	var Placeholder       = wp.components.Placeholder;
 	var __                = wp.i18n.__;
 
 	var blockTypes = [
@@ -28,7 +20,6 @@
 		{ value: 'similar_to_viewed', label: __( 'Related To Viewed', 'smartrec' ) },
 		{ value: 'bought_together',   label: __( 'Customers Also Bought', 'smartrec' ) },
 		{ value: 'new_arrivals',      label: __( 'New Arrivals', 'smartrec' ) },
-		{ value: 'custom',            label: __( 'Custom (advanced)', 'smartrec' ) },
 	];
 
 	var layouts = [
@@ -38,192 +29,157 @@
 		{ value: 'minimal', label: __( 'Minimal', 'smartrec' ) },
 	];
 
+	/* Fetch WC categories on first load */
+	var categoryOptions = [ { value: '', label: __( 'All categories', 'smartrec' ) } ];
+	var categoriesLoaded = false;
+
+	function loadCategories( callback ) {
+		if ( categoriesLoaded ) { callback(); return; }
+		wp.apiFetch( { path: '/wc/v3/products/categories?per_page=100&hide_empty=true' } ).then( function ( cats ) {
+			cats.forEach( function ( cat ) {
+				categoryOptions.push( { value: String( cat.id ), label: cat.name + ' (' + cat.count + ')' } );
+			} );
+			categoriesLoaded = true;
+			callback();
+		} ).catch( function () {
+			categoriesLoaded = true;
+			callback();
+		} );
+	}
+
 	registerBlockType( 'smartrec/recommendations', {
 		title: 'SmartRec — ' + __( 'Product Recommendations', 'smartrec' ),
-		description: __( 'Display intelligent product recommendations. Choose from multiple engines like Trending, Recently Viewed, Personalized, and more.', 'smartrec' ),
+		description: __( 'Display intelligent product recommendations filtered by category and recommendation engine.', 'smartrec' ),
 		category: 'widgets',
-		icon: {
-			src: 'products',
-			foreground: '#7f54b3',
-		},
-		keywords: [
-			'smartrec',
-			__( 'products', 'smartrec' ),
-			__( 'recommendations', 'smartrec' ),
-			__( 'woocommerce', 'smartrec' ),
-			__( 'related', 'smartrec' ),
-			__( 'trending', 'smartrec' ),
-		],
-		supports: {
-			html: false,
-			align: [ 'wide', 'full' ],
-		},
+		icon: { src: 'products', foreground: '#7f54b3' },
+		keywords: [ 'smartrec', 'products', 'recommendations', 'woocommerce', 'related', 'trending' ],
+		supports: { html: false, align: [ 'wide', 'full' ] },
 
 		edit: function ( props ) {
-			var attributes   = props.attributes;
-			var setAttributes = props.setAttributes;
+			var a    = props.attributes;
+			var set  = props.setAttributes;
 
-			var inspectorControls = el( InspectorControls, {},
+			/* Load categories */
+			var forceUpdate = wp.element.useState( 0 )[ 1 ];
+			wp.element.useEffect( function () {
+				loadCategories( function () { forceUpdate( Date.now() ); } );
+			}, [] );
 
-				/* Block Type */
+			var selectedType = blockTypes.filter( function(t) { return t.value === a.blockType; } )[0];
+			var typeName     = selectedType ? selectedType.label : a.blockType;
+			var catName      = '';
+			if ( a.category ) {
+				var found = categoryOptions.filter( function(c) { return c.value === a.category; } )[0];
+				catName = found ? found.label : '';
+			}
+
+			var sidebar = el( InspectorControls, {},
+
 				el( PanelBody, { title: __( 'Recommendation Type', 'smartrec' ), initialOpen: true },
 					el( SelectControl, {
 						label: __( 'Block Type', 'smartrec' ),
-						value: attributes.blockType,
+						value: a.blockType,
 						options: blockTypes,
-						onChange: function ( val ) { setAttributes( { blockType: val } ); },
+						onChange: function ( v ) { set( { blockType: v } ); },
 						help: __( 'Each type uses a different recommendation engine.', 'smartrec' ),
 					} ),
 					el( TextControl, {
 						label: __( 'Custom Title', 'smartrec' ),
-						value: attributes.title,
-						onChange: function ( val ) { setAttributes( { title: val } ); },
+						value: a.title,
+						onChange: function ( v ) { set( { title: v } ); },
 						placeholder: __( 'Leave empty for default', 'smartrec' ),
 					} )
 				),
 
-				/* Layout */
-				el( PanelBody, { title: __( 'Layout', 'smartrec' ), initialOpen: true },
+				el( PanelBody, { title: __( 'Category Filter', 'smartrec' ), initialOpen: true },
+					el( SelectControl, {
+						label: __( 'Filter by Category', 'smartrec' ),
+						value: a.category,
+						options: categoryOptions,
+						onChange: function ( v ) { set( { category: v } ); },
+						help: __( 'Show recommendations only from this category. Great for "Trending in Electronics", "For you in Home", etc.', 'smartrec' ),
+					} )
+				),
+
+				el( PanelBody, { title: __( 'Layout', 'smartrec' ), initialOpen: false },
 					el( SelectControl, {
 						label: __( 'Layout Style', 'smartrec' ),
-						value: attributes.layout,
+						value: a.layout,
 						options: layouts,
-						onChange: function ( val ) { setAttributes( { layout: val } ); },
+						onChange: function ( v ) { set( { layout: v } ); },
 					} ),
 					el( RangeControl, {
 						label: __( 'Products to Show', 'smartrec' ),
-						value: attributes.limit,
-						onChange: function ( val ) { setAttributes( { limit: val } ); },
-						min: 1,
-						max: 20,
+						value: a.limit, onChange: function ( v ) { set( { limit: v } ); },
+						min: 1, max: 20,
 					} )
 				),
 
-				/* Columns */
 				el( PanelBody, { title: __( 'Columns (Responsive)', 'smartrec' ), initialOpen: false },
-					el( RangeControl, {
-						label: __( 'Desktop', 'smartrec' ),
-						value: attributes.columns,
-						onChange: function ( val ) { setAttributes( { columns: val } ); },
-						min: 1,
-						max: 6,
-					} ),
-					el( RangeControl, {
-						label: __( 'Tablet', 'smartrec' ),
-						value: attributes.columnsTablet,
-						onChange: function ( val ) { setAttributes( { columnsTablet: val } ); },
-						min: 1,
-						max: 6,
-					} ),
-					el( RangeControl, {
-						label: __( 'Mobile', 'smartrec' ),
-						value: attributes.columnsMobile,
-						onChange: function ( val ) { setAttributes( { columnsMobile: val } ); },
-						min: 1,
-						max: 4,
-					} )
+					el( RangeControl, { label: __( 'Desktop', 'smartrec' ), value: a.columns, onChange: function ( v ) { set( { columns: v } ); }, min: 1, max: 6 } ),
+					el( RangeControl, { label: __( 'Tablet', 'smartrec' ), value: a.columnsTablet, onChange: function ( v ) { set( { columnsTablet: v } ); }, min: 1, max: 6 } ),
+					el( RangeControl, { label: __( 'Mobile', 'smartrec' ), value: a.columnsMobile, onChange: function ( v ) { set( { columnsMobile: v } ); }, min: 1, max: 4 } )
 				),
 
-				/* Display Elements */
 				el( PanelBody, { title: __( 'Display Elements', 'smartrec' ), initialOpen: false },
-					el( ToggleControl, {
-						label: __( 'Show Price', 'smartrec' ),
-						checked: attributes.showPrice,
-						onChange: function ( val ) { setAttributes( { showPrice: val } ); },
-					} ),
-					el( ToggleControl, {
-						label: __( 'Show Rating', 'smartrec' ),
-						checked: attributes.showRating,
-						onChange: function ( val ) { setAttributes( { showRating: val } ); },
-					} ),
-					el( ToggleControl, {
-						label: __( 'Show Add to Cart', 'smartrec' ),
-						checked: attributes.showAddToCart,
-						onChange: function ( val ) { setAttributes( { showAddToCart: val } ); },
-					} ),
-					el( ToggleControl, {
-						label: __( 'Show Reason Badge', 'smartrec' ),
-						checked: attributes.showReason,
-						onChange: function ( val ) { setAttributes( { showReason: val } ); },
-					} )
+					el( ToggleControl, { label: __( 'Price', 'smartrec' ), checked: a.showPrice, onChange: function ( v ) { set( { showPrice: v } ); } } ),
+					el( ToggleControl, { label: __( 'Rating', 'smartrec' ), checked: a.showRating, onChange: function ( v ) { set( { showRating: v } ); } } ),
+					el( ToggleControl, { label: __( 'Add to Cart', 'smartrec' ), checked: a.showAddToCart, onChange: function ( v ) { set( { showAddToCart: v } ); } } ),
+					el( ToggleControl, { label: __( 'Reason Badge', 'smartrec' ), checked: a.showReason, onChange: function ( v ) { set( { showReason: v } ); } } )
 				),
 
-				/* Load More */
 				el( PanelBody, { title: __( 'Load More', 'smartrec' ), initialOpen: false },
 					el( RangeControl, {
-						label: __( 'Products per click (0 = disabled)', 'smartrec' ),
-						value: attributes.loadMore,
-						onChange: function ( val ) { setAttributes( { loadMore: val } ); },
-						min: 0,
-						max: 20,
-					} )
-				),
-
-				/* Advanced */
-				el( PanelBody, { title: __( 'Advanced', 'smartrec' ), initialOpen: false },
-					el( TextControl, {
-						label: __( 'Category ID (optional)', 'smartrec' ),
-						value: attributes.category,
-						onChange: function ( val ) { setAttributes( { category: val } ); },
-						help: __( 'Filter by category ID. Leave empty for all.', 'smartrec' ),
+						label: __( 'Products per click (0 = off)', 'smartrec' ),
+						value: a.loadMore, onChange: function ( v ) { set( { loadMore: v } ); },
+						min: 0, max: 20,
 					} )
 				)
 			);
 
-			/* Preview */
-			var preview;
-			var selectedType = blockTypes.filter( function(t) { return t.value === attributes.blockType; } )[0];
-			var typeName = selectedType ? selectedType.label : attributes.blockType;
+			/* Editor placeholder — clean summary instead of broken SSR preview */
+			var details = [];
+			details.push( a.limit + ' ' + __( 'products', 'smartrec' ) );
+			details.push( a.columns + ' ' + __( 'columns', 'smartrec' ) );
+			details.push( a.layout );
+			if ( catName ) { details.push( catName ); }
+			if ( a.loadMore > 0 ) { details.push( __( 'Load More', 'smartrec' ) + ': +' + a.loadMore ); }
 
-			if ( ServerSideRender ) {
-				preview = el( ServerSideRender, {
-					block: 'smartrec/recommendations',
-					attributes: attributes,
-					EmptyResponsePlaceholder: function () {
-						return el( Placeholder, {
-							icon: 'products',
-							label: 'SmartRec',
-						},
-							el( 'p', {},
-								__( 'No recommendations available yet. Products will appear on the frontend once there is tracking data.', 'smartrec' )
-							)
-						);
-					},
-				} );
-			} else {
-				/* Fallback if ServerSideRender not available */
-				preview = el( Placeholder, {
-					icon: 'products',
-					label: 'SmartRec — ' + typeName,
-				},
-					el( 'p', {},
-						__( 'Product recommendations will be rendered on the frontend.', 'smartrec' )
-					),
-					el( 'p', { style: { fontSize: '12px', color: '#8c8f94' } },
-						attributes.limit + ' ' + __( 'products', 'smartrec' ) + ' · ' +
-						attributes.columns + ' ' + __( 'columns', 'smartrec' ) + ' · ' +
-						attributes.layout
-					)
-				);
+			var displayTitle = a.title || typeName;
+			if ( catName ) {
+				displayTitle += ' — ' + catName;
 			}
 
-			return el( 'div', {
-					className: props.className,
-					/* Prevent clicks on product links from navigating away from the editor */
-					onClick: function ( e ) {
-						var link = e.target.closest( 'a' );
-						if ( link ) { e.preventDefault(); }
+			var placeholder = el( 'div', {
+					className: 'smartrec-block-placeholder',
+					style: {
+						border: '2px dashed #7f54b3',
+						borderRadius: '8px',
+						padding: '24px',
+						textAlign: 'center',
+						background: '#faf8fc',
 					},
-					style: { pointerEvents: 'auto' },
 				},
-				inspectorControls,
-				preview
+				el( 'div', { style: { fontSize: '14px', fontWeight: 600, color: '#7f54b3', marginBottom: '6px' } },
+					'SmartRec'
+				),
+				el( 'div', { style: { fontSize: '18px', fontWeight: 600, color: '#1d2327', marginBottom: '8px' } },
+					displayTitle
+				),
+				el( 'div', { style: { fontSize: '13px', color: '#646970' } },
+					details.join( '  ·  ' )
+				),
+				el( 'div', { style: { fontSize: '11px', color: '#8c8f94', marginTop: '12px' } },
+					__( 'Product recommendations will render on the published page with your theme\'s styles.', 'smartrec' )
+				)
+			);
+
+			return el( 'div', { className: props.className },
+				sidebar,
+				placeholder
 			);
 		},
 
-		/* No save — server-side rendered */
-		save: function () {
-			return null;
-		},
+		save: function () { return null; },
 	} );
 } )();

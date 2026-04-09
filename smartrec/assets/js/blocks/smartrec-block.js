@@ -6,6 +6,7 @@
 	var el                = wp.element.createElement;
 	var registerBlockType = wp.blocks.registerBlockType;
 	var InspectorControls = wp.blockEditor.InspectorControls;
+	var useBlockProps      = wp.blockEditor.useBlockProps;
 	var PanelBody         = wp.components.PanelBody;
 	var SelectControl     = wp.components.SelectControl;
 	var TextControl       = wp.components.TextControl;
@@ -174,7 +175,9 @@
 				)
 			);
 
-			return el( 'div', { className: props.className },
+			var blockProps = useBlockProps ? useBlockProps() : { className: props.className };
+
+			return el( 'div', blockProps,
 				sidebar,
 				placeholder
 			);

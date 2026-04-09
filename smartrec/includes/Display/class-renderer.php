@@ -325,6 +325,15 @@ class Renderer {
 	 * @return array WC_Product objects.
 	 */
 	private function load_products( array $recommendations ): array {
+		$ids = array_column( $recommendations, 'product_id' );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+
+		// Batch-prime: 2 queries instead of N.
+		_prime_post_caches( $ids, true );
+		update_meta_cache( 'post', $ids );
+
 		$products = array();
 		foreach ( $recommendations as $rec ) {
 			$product = wc_get_product( $rec['product_id'] );

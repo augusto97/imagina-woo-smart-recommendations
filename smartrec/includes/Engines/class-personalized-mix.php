@@ -113,7 +113,14 @@ class PersonalizedMix implements RecommendationEngineInterface {
 			}
 		}
 
-		// Re-score based on user profile.
+		// Batch-prime all product IDs from all engines at once.
+		$all_ids = array_unique( array_column( $all_results, 'product_id' ) );
+		if ( ! empty( $all_ids ) ) {
+			_prime_post_caches( $all_ids, true );
+			update_meta_cache( 'post', $all_ids );
+		}
+
+		// Re-score based on user profile (wc_get_product now hits memory cache).
 		$scored = $this->personalize_scores( $all_results, $profile );
 
 		// Merge and deduplicate (keep highest score).
@@ -153,7 +160,8 @@ class PersonalizedMix implements RecommendationEngineInterface {
 	}
 
 	/**
-	 * Get user profile data.
+	 * Get user profile data — uses real-time session events when available,
+	 * falls back to pre-computed cron profile.
 	 *
 	 * @param int    $userId    User ID.
 	 * @param string $sessionId Session ID.
@@ -169,7 +177,10 @@ class PersonalizedMix implements RecommendationEngineInterface {
 			'purchased_products'   => array(),
 		);
 
-		// Try to load from user_profiles table.
+		// 1. Try real-time session data first (most recent behavior).
+		$realtime = $this->get_realtime_profile( $userId, $sessionId );
+
+		// 2. Load pre-computed cron profile as base.
 		$where_clause = '';
 		$where_args   = array();
 
@@ -179,36 +190,117 @@ class PersonalizedMix implements RecommendationEngineInterface {
 		} elseif ( ! empty( $sessionId ) ) {
 			$where_clause = 'WHERE session_id = %s';
 			$where_args   = array( $sessionId );
-		} else {
-			return $profile;
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}smartrec_user_profiles {$where_clause} LIMIT 1",
-				$where_args
-			),
-			ARRAY_A
-		);
+		if ( ! empty( $where_args ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$row = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}smartrec_user_profiles {$where_clause} LIMIT 1",
+					$where_args
+				),
+				ARRAY_A
+			);
 
-		if ( $row ) {
-			$profile['preferred_categories'] = ! empty( $row['preferred_categories'] ) ? json_decode( $row['preferred_categories'], true ) : array();
-			$profile['viewed_products']      = ! empty( $row['viewed_products'] ) ? json_decode( $row['viewed_products'], true ) : array();
-			$profile['purchased_products']   = ! empty( $row['purchased_products'] ) ? json_decode( $row['purchased_products'], true ) : array();
+			if ( $row ) {
+				$profile['preferred_categories'] = ! empty( $row['preferred_categories'] ) ? json_decode( $row['preferred_categories'], true ) : array();
+				$profile['viewed_products']      = ! empty( $row['viewed_products'] ) ? json_decode( $row['viewed_products'], true ) : array();
+				$profile['purchased_products']   = ! empty( $row['purchased_products'] ) ? json_decode( $row['purchased_products'], true ) : array();
 
-			if ( ! empty( $row['preferred_price_range'] ) ) {
-				$parts = explode( '-', $row['preferred_price_range'] );
-				if ( count( $parts ) === 2 ) {
-					$profile['preferred_price_range'] = array(
-						'min' => (float) $parts[0],
-						'max' => (float) $parts[1],
-					);
+				if ( ! empty( $row['preferred_price_range'] ) ) {
+					$parts = explode( '-', $row['preferred_price_range'] );
+					if ( count( $parts ) === 2 ) {
+						$profile['preferred_price_range'] = array(
+							'min' => (float) $parts[0],
+							'max' => (float) $parts[1],
+						);
+					}
 				}
 			}
 		}
 
+		// 3. Merge real-time data on top (real-time takes priority).
+		if ( ! empty( $realtime['viewed_products'] ) ) {
+			// Prepend fresh views (most recent first), dedup.
+			$profile['viewed_products'] = array_values( array_unique(
+				array_merge( $realtime['viewed_products'], $profile['viewed_products'] )
+			) );
+			$profile['viewed_products'] = array_slice( $profile['viewed_products'], 0, 50 );
+		}
+
+		if ( ! empty( $realtime['preferred_categories'] ) ) {
+			// Merge category weights — real-time gets 2x boost.
+			foreach ( $realtime['preferred_categories'] as $cat_id => $weight ) {
+				$existing = $profile['preferred_categories'][ $cat_id ] ?? 0;
+				$profile['preferred_categories'][ $cat_id ] = $existing + ( $weight * 2 );
+			}
+		}
+
 		return $profile;
+	}
+
+	/**
+	 * Build a real-time profile from the current session's recent events.
+	 * This reads directly from the events table — no cron needed.
+	 *
+	 * @param int    $userId    User ID.
+	 * @param string $sessionId Session ID.
+	 * @return array
+	 */
+	private function get_realtime_profile( int $userId, string $sessionId ): array {
+		global $wpdb;
+
+		$result = array(
+			'viewed_products'      => array(),
+			'preferred_categories' => array(),
+		);
+
+		// Get recent views from this session (last 2 hours, max 20).
+		$where = '';
+		$args  = array();
+		$since = gmdate( 'Y-m-d H:i:s', strtotime( '-2 hours' ) );
+
+		if ( $userId > 0 ) {
+			$where = 'WHERE (user_id = %d OR session_id = %s) AND event_type = %s AND created_at >= %s';
+			$args  = array( $userId, $sessionId, 'view', $since );
+		} elseif ( ! empty( $sessionId ) ) {
+			$where = 'WHERE session_id = %s AND event_type = %s AND created_at >= %s';
+			$args  = array( $sessionId, 'view', $since );
+		} else {
+			return $result;
+		}
+
+		$args[] = 20;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$recent_views = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT product_id FROM {$wpdb->prefix}smartrec_events {$where} ORDER BY created_at DESC LIMIT %d",
+				$args
+			)
+		);
+
+		if ( empty( $recent_views ) ) {
+			return $result;
+		}
+
+		$result['viewed_products'] = array_map( 'intval', $recent_views );
+
+		// Extract categories from recently viewed products.
+		_prime_post_caches( $result['viewed_products'], true );
+		update_meta_cache( 'post', $result['viewed_products'] );
+
+		foreach ( $result['viewed_products'] as $pid ) {
+			$product = wc_get_product( $pid );
+			if ( ! $product ) {
+				continue;
+			}
+			foreach ( $product->get_category_ids() as $cat_id ) {
+				$result['preferred_categories'][ $cat_id ] = ( $result['preferred_categories'][ $cat_id ] ?? 0 ) + 1;
+			}
+		}
+
+		return $result;
 	}
 
 	/**

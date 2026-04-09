@@ -26,6 +26,7 @@
 		var engine    = btn.getAttribute('data-engine') || '';
 		var limit     = parseInt(btn.getAttribute('data-limit') || '4', 10);
 		var useWc     = btn.getAttribute('data-use-wc') === '1';
+		var category  = btn.getAttribute('data-category') || '';
 
 		// Find the product container.
 		var widget    = btn.closest('.smartrec-widget');
@@ -79,6 +80,7 @@
 			exclude:    shownIds.join(',')
 		});
 		if (engine) { params.set('engine', engine); }
+		if (category) { params.set('category', category); }
 
 		fetch(restUrl + '?' + params.toString(), {
 			method: 'GET',

@@ -89,8 +89,24 @@ class RecommendationManager {
 		$userId    = get_current_user_id();
 		$sessionId = isset( $_COOKIE['smartrec_session'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['smartrec_session'] ) ) : '';
 
-		// Check cache.
-		if ( $this->settings->get( 'cache_enabled', true ) ) {
+		$exclude_ids = $args['exclude'] ?? array();
+		$requested_limit = $args['limit'] ?? (int) $this->settings->get( 'default_limit', 8 );
+
+		// Ask engines for more products when we'll filter results down.
+		$engine_limit = $requested_limit;
+		$category_id  = (int) ( $args['category_id'] ?? 0 );
+
+		if ( ! empty( $exclude_ids ) ) {
+			$engine_limit += count( $exclude_ids );
+		}
+
+		// Category filter will discard many results — ask for 5x more.
+		if ( $category_id > 0 ) {
+			$engine_limit = max( $engine_limit * 5, 40 );
+		}
+
+		// Check cache only when NOT excluding (normal page load).
+		if ( empty( $exclude_ids ) && $this->settings->get( 'cache_enabled', true ) ) {
 			$cache_key = $this->build_cache_key( $location, $productId, $args );
 			$cache_key = apply_filters( 'smartrec_cache_key', $cache_key, $location, $productId );
 			$cached    = $this->cache->get( $cache_key );
@@ -104,6 +120,11 @@ class RecommendationManager {
 
 		do_action( 'smartrec_before_recommendations', $location, $productId, $engines );
 
+		// Build engine args with expanded limit.
+		$engine_args = $args;
+		$engine_args['limit'] = $engine_limit;
+		$engine_args['exclude'] = $exclude_ids;
+
 		// Query each engine.
 		$all_results = array();
 		foreach ( $engines as $engine ) {
@@ -112,7 +133,7 @@ class RecommendationManager {
 			}
 
 			try {
-				$results = $engine->getRecommendations( $productId, $userId, $sessionId, $args );
+				$results = $engine->getRecommendations( $productId, $userId, $sessionId, $engine_args );
 				$all_results[ $engine->getId() ] = $results;
 			} catch ( \Exception $e ) {
 				if ( $this->settings->get( 'debug_mode', false ) ) {
@@ -128,8 +149,20 @@ class RecommendationManager {
 		// Apply global filters.
 		$merged = apply_filters( 'smartrec_filter_results', $merged, $location, $productId );
 
+		// Filter by category if specified (applies to ALL engines).
+		$category_id = (int) ( $args['category_id'] ?? 0 );
+		if ( $category_id > 0 ) {
+			$merged = $this->filter_by_category( $merged, $category_id );
+		}
+
+		// Filter out excluded IDs (from Load More).
+		if ( ! empty( $exclude_ids ) ) {
+			$merged = array_values( array_filter( $merged, function ( $r ) use ( $exclude_ids ) {
+				return ! in_array( (int) $r['product_id'], $exclude_ids, true );
+			} ) );
+		}
+
 		// Batch-prime WP object cache for all product IDs at once.
-		// This converts N individual wc_get_product() queries into 2-3 batch queries.
 		$this->prime_product_cache( $merged );
 
 		// Validate products (now hits in-memory cache, ~0 DB queries).
@@ -138,14 +171,13 @@ class RecommendationManager {
 		// Apply global exclude list.
 		$merged = $this->apply_exclusions( $merged, $location );
 
-		// Limit results.
-		$limit  = $args['limit'] ?? (int) $this->settings->get( 'default_limit', 8 );
-		$merged = array_slice( $merged, 0, $limit );
+		// Limit to requested amount.
+		$merged = array_slice( $merged, 0, $requested_limit );
 
 		do_action( 'smartrec_after_recommendations', $location, $productId, $merged );
 
-		// Cache results. Personalized engines use shorter TTL for freshness.
-		if ( $this->settings->get( 'cache_enabled', true ) && ! empty( $merged ) ) {
+		// Cache results (skip cache for Load More requests with exclusions).
+		if ( empty( $exclude_ids ) && $this->settings->get( 'cache_enabled', true ) && ! empty( $merged ) ) {
 			$engine_id = $args['engine'] ?? 'default';
 			$personalized_engines = array( 'personalized_mix', 'recently_viewed', 'similar', 'bought_together' );
 			$is_personalized = in_array( $engine_id, $personalized_engines, true ) || 'default' === $engine_id;
@@ -236,6 +268,30 @@ class RecommendationManager {
 		);
 
 		return $merged;
+	}
+
+	/**
+	 * Filter results to only include products in a specific category.
+	 *
+	 * @param array $results     Recommendation results.
+	 * @param int   $category_id Category term ID.
+	 * @return array Filtered results.
+	 */
+	private function filter_by_category( array $results, int $category_id ): array {
+		if ( empty( $results ) ) {
+			return $results;
+		}
+
+		// Prime cache first so get_category_ids() doesn't trigger N queries.
+		$this->prime_product_cache( $results );
+
+		return array_values( array_filter( $results, function ( $r ) use ( $category_id ) {
+			$product = wc_get_product( $r['product_id'] );
+			if ( ! $product ) {
+				return false;
+			}
+			return in_array( $category_id, $product->get_category_ids(), true );
+		} ) );
 	}
 
 	/**
@@ -341,6 +397,7 @@ class RecommendationManager {
 			$productId,
 			$engine,
 			$args['limit'] ?? $this->settings->get( 'default_limit', 8 ),
+			$args['category_id'] ?? 0,
 			$user_part,
 		);
 

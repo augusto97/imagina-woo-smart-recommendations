@@ -35,9 +35,12 @@ $css_class      = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings[
 		<div class="woocommerce smartrec-wc-products">
 			<ul class="products columns-<?php echo esc_attr( $columns ); ?>">
 				<?php
-				// Use WooCommerce loop columns filter so themes pick up the right value.
-				$smartrec_prev_columns = 0;
-				$smartrec_set_columns  = static function () use ( $columns ) {
+				// Set WC loop properties so themes apply correct grid styles.
+				wc_set_loop_prop( 'columns', $columns );
+				wc_set_loop_prop( 'name', 'smartrec' );
+				wc_set_loop_prop( 'is_paginated', false );
+
+				$smartrec_set_columns = static function () use ( $columns ) {
 					return $columns;
 				};
 				add_filter( 'loop_shop_columns', $smartrec_set_columns, 999 );
@@ -140,7 +143,8 @@ $css_class      = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings[
 					data-limit="<?php echo esc_attr( $settings['load_more_count'] ?? 4 ); ?>"
 					data-layout="grid"
 					data-use-wc="<?php echo esc_attr( ! empty( $settings['use_wc_template'] ) ? '1' : '0' ); ?>"
-					data-columns="<?php echo esc_attr( $columns ); ?>">
+					data-columns="<?php echo esc_attr( $columns ); ?>"
+					data-category="<?php echo esc_attr( $settings['category_id'] ?? '' ); ?>">
 				<?php echo esc_html( $settings['load_more_text'] ?? __( 'Load more', 'smartrec' ) ); ?>
 			</button>
 		</div>

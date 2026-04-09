@@ -117,6 +117,10 @@ class RestAPI {
 						'default'           => 0,
 						'sanitize_callback' => 'absint',
 					),
+					'category'   => array(
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 				),
 			)
 		);
@@ -258,6 +262,8 @@ class RestAPI {
 			$exclude_ids = array_filter( array_map( 'absint', explode( ',', $exclude_raw ) ) );
 		}
 
+		$category = (int) $request->get_param( 'category' );
+
 		$args = array(
 			'offset'  => $offset,
 			'limit'   => $limit,
@@ -266,6 +272,10 @@ class RestAPI {
 
 		if ( ! empty( $engine ) ) {
 			$args['engine'] = $engine;
+		}
+
+		if ( $category > 0 ) {
+			$args['category_id'] = $category;
 		}
 
 		$recommendations = $this->manager->getRecommendations( $location, $product_id, $args );

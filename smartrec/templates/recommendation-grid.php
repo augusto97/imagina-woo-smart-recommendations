@@ -143,7 +143,8 @@ $css_class      = ! empty( $settings['css_class'] ) ? ' ' . esc_attr( $settings[
 					data-limit="<?php echo esc_attr( $settings['load_more_count'] ?? 4 ); ?>"
 					data-layout="grid"
 					data-use-wc="<?php echo esc_attr( ! empty( $settings['use_wc_template'] ) ? '1' : '0' ); ?>"
-					data-columns="<?php echo esc_attr( $columns ); ?>">
+					data-columns="<?php echo esc_attr( $columns ); ?>"
+					data-category="<?php echo esc_attr( $settings['category_id'] ?? '' ); ?>">
 				<?php echo esc_html( $settings['load_more_text'] ?? __( 'Load more', 'smartrec' ) ); ?>
 			</button>
 		</div>

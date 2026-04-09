@@ -92,11 +92,17 @@ class RecommendationManager {
 		$exclude_ids = $args['exclude'] ?? array();
 		$requested_limit = $args['limit'] ?? (int) $this->settings->get( 'default_limit', 8 );
 
-		// When excluding products (Load More), ask engines for more to compensate.
+		// Ask engines for more products when we'll filter results down.
 		$engine_limit = $requested_limit;
+		$category_id  = (int) ( $args['category_id'] ?? 0 );
+
 		if ( ! empty( $exclude_ids ) ) {
-			$engine_limit = $requested_limit + count( $exclude_ids );
-			// Skip cache when excluding — Load More needs fresh filtered results.
+			$engine_limit += count( $exclude_ids );
+		}
+
+		// Category filter will discard many results — ask for 5x more.
+		if ( $category_id > 0 ) {
+			$engine_limit = max( $engine_limit * 5, 40 );
 		}
 
 		// Check cache only when NOT excluding (normal page load).
@@ -142,6 +148,12 @@ class RecommendationManager {
 
 		// Apply global filters.
 		$merged = apply_filters( 'smartrec_filter_results', $merged, $location, $productId );
+
+		// Filter by category if specified (applies to ALL engines).
+		$category_id = (int) ( $args['category_id'] ?? 0 );
+		if ( $category_id > 0 ) {
+			$merged = $this->filter_by_category( $merged, $category_id );
+		}
 
 		// Filter out excluded IDs (from Load More).
 		if ( ! empty( $exclude_ids ) ) {
@@ -259,6 +271,30 @@ class RecommendationManager {
 	}
 
 	/**
+	 * Filter results to only include products in a specific category.
+	 *
+	 * @param array $results     Recommendation results.
+	 * @param int   $category_id Category term ID.
+	 * @return array Filtered results.
+	 */
+	private function filter_by_category( array $results, int $category_id ): array {
+		if ( empty( $results ) ) {
+			return $results;
+		}
+
+		// Prime cache first so get_category_ids() doesn't trigger N queries.
+		$this->prime_product_cache( $results );
+
+		return array_values( array_filter( $results, function ( $r ) use ( $category_id ) {
+			$product = wc_get_product( $r['product_id'] );
+			if ( ! $product ) {
+				return false;
+			}
+			return in_array( $category_id, $product->get_category_ids(), true );
+		} ) );
+	}
+
+	/**
 	 * Batch-prime WP object cache for a list of product IDs.
 	 *
 	 * Loads all post data, post meta, and term data in 2-3 bulk queries
@@ -361,6 +397,7 @@ class RecommendationManager {
 			$productId,
 			$engine,
 			$args['limit'] ?? $this->settings->get( 'default_limit', 8 ),
+			$args['category_id'] ?? 0,
 			$user_part,
 		);
 

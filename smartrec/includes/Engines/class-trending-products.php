@@ -170,17 +170,21 @@ class TrendingProducts implements RecommendationEngineInterface {
 	 * @return array
 	 */
 	private function get_fallback_popular( array $exclude, int $limit ): array {
+		// Get more than needed and randomize for variety.
 		$products = wc_get_products(
 			array(
 				'status'       => 'publish',
-				'limit'        => $limit,
+				'limit'        => $limit * 3,
 				'exclude'      => $exclude,
-				'orderby'      => 'popularity',
-				'order'        => 'DESC',
+				'orderby'      => 'rand',
 				'stock_status' => 'instock',
 				'return'       => 'ids',
 			)
 		);
+
+		if ( count( $products ) > $limit ) {
+			$products = array_slice( $products, 0, $limit );
+		}
 
 		$recommendations = array();
 		foreach ( $products as $pid ) {

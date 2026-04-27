@@ -225,11 +225,10 @@ class ComplementaryProducts implements RecommendationEngineInterface {
 			$products = wc_get_products(
 				array(
 					'status'       => 'publish',
-					'limit'        => $limit,
+					'limit'        => $limit * 2,
 					'category'     => array( (string) $cat_id ),
 					'exclude'      => $exclude,
-					'orderby'      => 'popularity',
-					'order'        => 'DESC',
+					'orderby'      => 'rand',
 					'stock_status' => 'instock',
 					'return'       => 'ids',
 				)

@@ -235,19 +235,25 @@ class BoughtTogether implements RecommendationEngineInterface {
 			return $recommendations;
 		}
 
-		$needed    = $limit - count( $recommendations );
+		$needed = $limit - count( $recommendations );
+
+		// Get more candidates than needed, then pick randomly for variety.
 		$fallbacks = wc_get_products(
 			array(
-				'status'   => 'publish',
-				'limit'    => $needed,
-				'category' => array_map( 'strval', $categories ),
-				'exclude'  => $all_exclude,
-				'orderby'  => 'popularity',
-				'order'    => 'DESC',
+				'status'       => 'publish',
+				'limit'        => $needed * 3,
+				'category'     => array_map( 'strval', $categories ),
+				'exclude'      => $all_exclude,
+				'orderby'      => 'rand',
 				'stock_status' => 'instock',
-				'return'   => 'ids',
+				'return'       => 'ids',
 			)
 		);
+
+		if ( count( $fallbacks ) > $needed ) {
+			shuffle( $fallbacks );
+			$fallbacks = array_slice( $fallbacks, 0, $needed );
+		}
 
 		foreach ( $fallbacks as $fallback_id ) {
 			$recommendations[] = array(

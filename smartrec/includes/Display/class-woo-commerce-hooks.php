@@ -70,9 +70,11 @@ class WooCommerceHooks {
 			add_filter( 'woocommerce_product_tabs', array( $this, 'add_recommendations_tab' ) );
 		}
 
-		// Cart page.
+		// Cart page — multiple hooks for compatibility with classic and block cart.
 		if ( $this->settings->get( 'location_cart_page', true ) ) {
 			add_action( 'woocommerce_after_cart_table', array( $this, 'render_cart_page' ) );
+			add_action( 'woocommerce_after_cart', array( $this, 'render_cart_page_once' ) );
+			add_action( 'wp_footer', array( $this, 'render_cart_page_block_fallback' ) );
 		}
 
 		// Replace WC cross-sells.
@@ -81,9 +83,10 @@ class WooCommerceHooks {
 			add_action( 'woocommerce_cart_collaterals', array( $this, 'render_cart_cross_sells' ) );
 		}
 
-		// Checkout page.
+		// Checkout page — classic + block checkout.
 		if ( $this->settings->get( 'location_checkout_page', false ) ) {
 			add_action( 'woocommerce_after_checkout_form', array( $this, 'render_checkout_page' ) );
+			add_action( 'wp_footer', array( $this, 'render_checkout_page_block_fallback' ) );
 		}
 
 		// Category/archive pages.
@@ -155,10 +158,54 @@ class WooCommerceHooks {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Track whether cart recommendations have already been rendered.
+	 *
+	 * @var bool
+	 */
+	private $cart_rendered = false;
+
+	/**
+	 * Render cart page recommendations.
+	 *
+	 * @return void
+	 */
 	public function render_cart_page() {
+		if ( $this->cart_rendered ) {
+			return;
+		}
+		$this->cart_rendered = true;
+
 		$product_id = $this->get_primary_cart_product_id();
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo $this->renderer->render( 'cart_page', $product_id );
+	}
+
+	/**
+	 * Render cart page recommendations (deduped for woocommerce_after_cart).
+	 *
+	 * @return void
+	 */
+	public function render_cart_page_once() {
+		$this->render_cart_page();
+	}
+
+	/**
+	 * Fallback for block-based cart: render in wp_footer if on cart page.
+	 *
+	 * @return void
+	 */
+	public function render_cart_page_block_fallback() {
+		if ( $this->cart_rendered ) {
+			return;
+		}
+
+		// Check if we're on the cart page.
+		if ( ! function_exists( 'is_cart' ) || ! is_cart() ) {
+			return;
+		}
+
+		$this->render_cart_page();
 	}
 
 	/**
@@ -177,10 +224,40 @@ class WooCommerceHooks {
 	 *
 	 * @return void
 	 */
+	/**
+	 * @var bool
+	 */
+	private $checkout_rendered = false;
+
+	/**
+	 * Render recommendations on checkout page.
+	 *
+	 * @return void
+	 */
 	public function render_checkout_page() {
+		if ( $this->checkout_rendered ) {
+			return;
+		}
+		$this->checkout_rendered = true;
+
 		$product_id = $this->get_primary_cart_product_id();
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo $this->renderer->render( 'checkout_page', $product_id );
+	}
+
+	/**
+	 * Fallback for block-based checkout.
+	 *
+	 * @return void
+	 */
+	public function render_checkout_page_block_fallback() {
+		if ( $this->checkout_rendered ) {
+			return;
+		}
+		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+			return;
+		}
+		$this->render_checkout_page();
 	}
 
 	/**

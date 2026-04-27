@@ -135,6 +135,13 @@
 						value: a.loadMore, onChange: function ( v ) { set( { loadMore: v } ); },
 						min: 0, max: 20,
 					} ),
+					el( TextControl, {
+						label: __( 'Button Text', 'smartrec' ),
+						value: a.loadMoreText || '',
+						onChange: function ( v ) { set( { loadMoreText: v } ); },
+						placeholder: __( 'Load more', 'smartrec' ),
+						help: __( 'Leave empty to use the global setting.', 'smartrec' ),
+					} ),
 					el( SelectControl, {
 						label: __( 'Product Order', 'smartrec' ),
 						value: a.order,
@@ -276,6 +283,12 @@
 						label: __( 'Products per click (0 = off)', 'smartrec' ),
 						value: a.loadMore, onChange: function ( v ) { set( { loadMore: v } ); },
 						min: 0, max: 20,
+					} ),
+					el( TextControl, {
+						label: __( 'Button Text', 'smartrec' ),
+						value: a.loadMoreText || '',
+						onChange: function ( v ) { set( { loadMoreText: v } ); },
+						placeholder: __( 'Load more', 'smartrec' ),
 					} ),
 					el( SelectControl, {
 						label: __( 'Order', 'smartrec' ),

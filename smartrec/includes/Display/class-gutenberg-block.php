@@ -99,6 +99,7 @@ class GutenbergBlock {
 				'columnsMobile'  => array( 'type' => 'number', 'default' => 1 ),
 				'layout'         => array( 'type' => 'string', 'default' => 'grid' ),
 				'loadMore'       => array( 'type' => 'number', 'default' => 0 ),
+				'loadMoreText'   => array( 'type' => 'string', 'default' => '' ),
 				'showPrice'      => array( 'type' => 'boolean', 'default' => true ),
 				'showRating'     => array( 'type' => 'boolean', 'default' => true ),
 				'showAddToCart'  => array( 'type' => 'boolean', 'default' => true ),
@@ -124,6 +125,7 @@ class GutenbergBlock {
 				'columnsMobile'  => array( 'type' => 'number', 'default' => 1 ),
 				'layout'         => array( 'type' => 'string', 'default' => 'grid' ),
 				'loadMore'       => array( 'type' => 'number', 'default' => 0 ),
+				'loadMoreText'   => array( 'type' => 'string', 'default' => '' ),
 				'showPrice'      => array( 'type' => 'boolean', 'default' => true ),
 				'showRating'     => array( 'type' => 'boolean', 'default' => true ),
 				'showAddToCart'  => array( 'type' => 'boolean', 'default' => true ),
@@ -169,6 +171,7 @@ class GutenbergBlock {
 			'columns_mobile' => (int) ( $attributes['columnsMobile'] ?? 1 ),
 			'layout'         => $attributes['layout'] ?? 'grid',
 			'load_more'      => (int) ( $attributes['loadMore'] ?? 0 ),
+			'load_more_text' => $attributes['loadMoreText'] ?? '',
 			'show_price'     => ! empty( $attributes['showPrice'] ) ? 'yes' : 'no',
 			'show_rating'    => ! empty( $attributes['showRating'] ) ? 'yes' : 'no',
 			'show_add_to_cart' => ! empty( $attributes['showAddToCart'] ) ? 'yes' : 'no',
@@ -272,7 +275,8 @@ class GutenbergBlock {
 		if ( $load_more > 0 ) {
 			$args['load_more']       = true;
 			$args['load_more_count'] = $load_more;
-			$args['load_more_text']  = $this->settings->get( 'load_more_text', __( 'Load more', 'smartrec' ) );
+			$custom_text = $attributes['loadMoreText'] ?? '';
+			$args['load_more_text'] = ! empty( $custom_text ) ? $custom_text : $this->settings->get( 'load_more_text', __( 'Load more', 'smartrec' ) );
 		}
 
 		return $renderer->render( 'single_product_below', $product_id, $args );

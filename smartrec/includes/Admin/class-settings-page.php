@@ -186,6 +186,18 @@ class SettingsPage {
 			<p class="smartrec-section__desc"><?php esc_html_e( 'Choose which elements to show inside each product card.', 'smartrec' ); ?></p>
 			<table class="form-table" role="presentation">
 				<tr>
+					<th scope="row">
+						<label for="smartrec_load_more_text"><?php esc_html_e( 'Load More Button Text', 'smartrec' ); ?></label>
+					</th>
+					<td>
+						<input type="text" id="smartrec_load_more_text" name="smartrec_load_more_text"
+							   value="<?php echo esc_attr( $this->settings->get( 'load_more_text', '' ) ); ?>"
+							   placeholder="<?php esc_attr_e( 'Load more', 'smartrec' ); ?>"
+							   class="regular-text">
+						<p class="description"><?php esc_html_e( 'Text shown on the "Load More" button. Leave empty for default.', 'smartrec' ); ?></p>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row"><?php esc_html_e( 'Show Price', 'smartrec' ); ?></th>
 					<td>
 						<label>

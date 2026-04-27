@@ -596,6 +596,7 @@ class AdminPage {
 			'show_rating'          => 'bool',
 			'show_add_to_cart'     => 'bool',
 			'show_reason'          => 'bool',
+			'load_more_text'       => 'string',
 			'debug_mode'           => 'bool',
 			'delete_data_on_uninstall' => 'bool',
 			'engine_similar_enabled'        => 'bool',

@@ -84,6 +84,7 @@ class Shortcode {
 				'show_add_to_cart' => 'yes',
 				'show_reason'    => 'yes',
 				'order'          => 'score',
+				'load_more_text' => '',
 				'css_class'      => '',
 			),
 			$atts,
@@ -230,6 +231,7 @@ class Shortcode {
 				'show_add_to_cart' => 'yes',
 				'show_reason'      => 'no',
 				'load_more'        => 0,
+				'load_more_text'   => '',
 				'order'            => 'score',
 				'css_class'        => '',
 			),
@@ -265,6 +267,9 @@ class Shortcode {
 		if ( $load_more > 0 ) {
 			$args['load_more']       = true;
 			$args['load_more_count'] = $load_more;
+			if ( ! empty( $atts['load_more_text'] ) ) {
+				$args['load_more_text'] = sanitize_text_field( $atts['load_more_text'] );
+			}
 		}
 
 		if ( ! empty( $atts['exclude'] ) ) {

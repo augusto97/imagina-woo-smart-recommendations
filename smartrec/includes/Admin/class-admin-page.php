@@ -781,7 +781,94 @@ class AdminPage {
 					}
 				);
 				break;
+
+			case 'import_orders':
+				$count = $this->import_wc_order_history();
+				add_action(
+					'admin_notices',
+					function () use ( $count ) {
+						/* translators: %d: number of events imported */
+						echo '<div class="notice notice-success"><p>' . esc_html( sprintf( __( 'Order history imported. %d purchase events created. Now click "Rebuild Relationships" to build co-purchase data.', 'smartrec' ), $count ) ) . '</p></div>';
+					}
+				);
+				break;
 		}
+	}
+
+	/**
+	 * Import WooCommerce order history as purchase events.
+	 *
+	 * @return int Number of events created.
+	 */
+	private function import_wc_order_history(): int {
+		global $wpdb;
+
+		$events_table = $wpdb->prefix . 'smartrec_events';
+		$imported     = 0;
+
+		// Get completed/processing orders from the last 12 months.
+		$orders = wc_get_orders( array(
+			'status'       => array( 'completed', 'processing' ),
+			'limit'        => 500,
+			'orderby'      => 'date',
+			'order'        => 'DESC',
+			'date_created' => '>' . gmdate( 'Y-m-d', strtotime( '-12 months' ) ),
+		) );
+
+		if ( empty( $orders ) ) {
+			return 0;
+		}
+
+		$values      = array();
+		$placeholder = "(%s, %d, %s, %d, %d, %s, %s)";
+
+		foreach ( $orders as $order ) {
+			$order_id    = $order->get_id();
+			$user_id     = $order->get_user_id();
+			$session_id  = 'order_' . $order_id;
+			$order_date  = $order->get_date_created() ? $order->get_date_created()->date( 'Y-m-d H:i:s' ) : current_time( 'mysql' );
+
+			$items = $order->get_items();
+			if ( count( $items ) < 1 ) {
+				continue;
+			}
+
+			foreach ( $items as $item ) {
+				$product_id = $item->get_product_id();
+				if ( $product_id <= 0 ) {
+					continue;
+				}
+
+				$values[] = $wpdb->prepare(
+					$placeholder,
+					$session_id,
+					$user_id,
+					'purchase',
+					$product_id,
+					$item->get_quantity(),
+					'order',
+					$order_date
+				);
+				++$imported;
+			}
+
+			// Batch insert every 200 events.
+			if ( count( $values ) >= 200 ) {
+				$wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+					"INSERT IGNORE INTO {$events_table} (session_id, user_id, event_type, product_id, quantity, context, created_at) VALUES " . implode( ',', $values )
+				);
+				$values = array();
+			}
+		}
+
+		// Insert remaining.
+		if ( ! empty( $values ) ) {
+			$wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				"INSERT IGNORE INTO {$events_table} (session_id, user_id, event_type, product_id, quantity, context, created_at) VALUES " . implode( ',', $values )
+			);
+		}
+
+		return $imported;
 	}
 
 	/**

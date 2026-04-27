@@ -71,44 +71,73 @@ class BoughtTogether implements RecommendationEngineInterface {
 			$productId = $this->get_last_viewed_product( $userId, $sessionId );
 		}
 
-		if ( $productId <= 0 ) {
+		// Collect product IDs: single product or all cart products.
+		$seed_ids = array();
+		if ( $productId > 0 ) {
+			$seed_ids[] = $productId;
+		}
+
+		// If on cart/checkout, include all cart product IDs for better results.
+		if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
+			foreach ( WC()->cart->get_cart() as $item ) {
+				if ( ! empty( $item['product_id'] ) ) {
+					$seed_ids[] = (int) $item['product_id'];
+				}
+			}
+		}
+
+		$seed_ids = array_unique( array_filter( $seed_ids ) );
+
+		if ( empty( $seed_ids ) ) {
 			return array();
 		}
 
 		$limit   = $args['limit'] ?? $this->getDefaultLimit();
 		$exclude = $args['exclude'] ?? array();
-		$exclude[] = $productId;
+		$exclude = array_merge( $exclude, $seed_ids );
 
 		global $wpdb;
 
-		// Query pre-computed relationships.
-		$exclude_ids = implode( ',', array_map( 'absint', $exclude ) );
+		// Query pre-computed relationships for ALL seed products.
+		$seed_placeholders = implode( ',', array_fill( 0, count( $seed_ids ), '%d' ) );
+		$exclude_ids = array_unique( array_map( 'absint', $exclude ) );
+		$exclude_placeholders = implode( ',', array_fill( 0, count( $exclude_ids ), '%d' ) );
+
+		$query_args = array_merge( $seed_ids, $exclude_ids );
+		$query_args[] = $limit * 2;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT pr.related_product_id AS product_id, pr.score, pr.occurrences
+				"SELECT pr.related_product_id AS product_id, MAX(pr.score) AS score, SUM(pr.occurrences) AS occurrences
 				FROM {$wpdb->prefix}smartrec_product_relationships pr
 				INNER JOIN {$wpdb->posts} p ON p.ID = pr.related_product_id AND p.post_status = 'publish'
-				WHERE pr.product_id = %d
+				WHERE pr.product_id IN ({$seed_placeholders})
 				AND pr.relationship_type = 'bought_together'
-				AND pr.related_product_id NOT IN ({$exclude_ids})
-				ORDER BY pr.score DESC
+				AND pr.related_product_id NOT IN ({$exclude_placeholders})
+				GROUP BY pr.related_product_id
+				ORDER BY score DESC
 				LIMIT %d",
-				$productId,
-				$limit * 2
-			),
-			ARRAY_A
+				$query_args
+			)
 		);
+
+		if ( ! empty( $results ) ) {
+			$rec_ids = array_map( function ( $r ) { return (int) $r->product_id; }, $results );
+			_prime_post_caches( $rec_ids, true );
+			update_meta_cache( 'post', $rec_ids );
+		}
 
 		$recommendations = array();
 		foreach ( $results as $row ) {
-			$product = wc_get_product( (int) $row['product_id'] );
+			$product = wc_get_product( (int) $row->product_id );
 			if ( ! $product || ! $product->is_in_stock() ) {
 				continue;
 			}
 
 			$recommendations[] = array(
-				'product_id' => (int) $row['product_id'],
-				'score'      => (float) $row['score'],
+				'product_id' => (int) $row->product_id,
+				'score'      => (float) $row->score,
 				'reason'     => __( 'Frequently bought together', 'smartrec' ),
 			);
 
@@ -118,11 +147,12 @@ class BoughtTogether implements RecommendationEngineInterface {
 		}
 
 		// Fallback: if insufficient results, get popular products in same category.
-		if ( count( $recommendations ) < $limit ) {
-			$recommendations = $this->supplement_with_fallback( $productId, $recommendations, $exclude, $limit );
+		$primary_id = $seed_ids[0] ?? 0;
+		if ( count( $recommendations ) < $limit && $primary_id > 0 ) {
+			$recommendations = $this->supplement_with_fallback( $primary_id, $recommendations, $exclude, $limit );
 		}
 
-		return apply_filters( 'smartrec_engine_results', $recommendations, $this->getId(), $productId );
+		return apply_filters( 'smartrec_engine_results', $recommendations, $this->getId(), $primary_id );
 	}
 
 	/**

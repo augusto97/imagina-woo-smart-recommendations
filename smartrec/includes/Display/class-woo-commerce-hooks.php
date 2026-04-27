@@ -177,8 +177,18 @@ class WooCommerceHooks {
 		$this->cart_rendered = true;
 
 		$product_id = $this->get_primary_cart_product_id();
+
+		// Try with the primary cart product first.
+		$html = $this->renderer->render( 'cart_page', $product_id );
+
+		// If no results with that product, try with product_id=0
+		// so engines like trending/personalized can still return results.
+		if ( empty( $html ) && $product_id > 0 ) {
+			$html = $this->renderer->render( 'cart_page', 0 );
+		}
+
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo $this->renderer->render( 'cart_page', $product_id );
+		echo $html;
 	}
 
 	/**

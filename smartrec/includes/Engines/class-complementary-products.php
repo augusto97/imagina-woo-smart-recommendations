@@ -222,17 +222,25 @@ class ComplementaryProducts implements RecommendationEngineInterface {
 		$results      = array();
 
 		foreach ( $category_ids as $cat_id ) {
-			$products = wc_get_products(
-				array(
-					'status'       => 'publish',
-					'limit'        => $limit * 2,
-					'category'     => array( (string) $cat_id ),
-					'exclude'      => $exclude,
-					'orderby'      => 'rand',
-					'stock_status' => 'instock',
-					'return'       => 'ids',
-				)
-			);
+			$comp_query = new \WP_Query( array(
+					'post_type'      => 'product',
+					'post_status'    => 'publish',
+					'posts_per_page' => $limit * 2,
+					'post__not_in'   => $exclude,
+					'fields'         => 'ids',
+					'orderby'        => 'rand',
+					'no_found_rows'  => true,
+					'tax_query'      => array( array(
+						'taxonomy' => 'product_cat',
+						'field'    => 'term_id',
+						'terms'    => array( $cat_id ),
+					) ),
+					'meta_query'     => array( array(
+						'key'     => '_stock_status',
+						'value'   => 'instock',
+					) ),
+				) );
+				$products = $comp_query->posts;
 
 			foreach ( $products as $pid ) {
 				$product = wc_get_product( $pid );

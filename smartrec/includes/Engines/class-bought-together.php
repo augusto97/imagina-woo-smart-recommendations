@@ -235,17 +235,25 @@ class BoughtTogether implements RecommendationEngineInterface {
 		$categories = $product ? $product->get_category_ids() : array();
 
 		if ( ! empty( $categories ) ) {
-			$fallbacks = wc_get_products(
-				array(
-					'status'       => 'publish',
-					'limit'        => $needed * 3,
-					'category'     => array_map( 'strval', $categories ),
-					'exclude'      => $all_exclude,
-					'orderby'      => 'rand',
-					'stock_status' => 'instock',
-					'return'       => 'ids',
-				)
-			);
+			$cat_query = new \WP_Query( array(
+					'post_type'      => 'product',
+					'post_status'    => 'publish',
+					'posts_per_page' => $needed * 3,
+					'post__not_in'   => $all_exclude,
+					'fields'         => 'ids',
+					'orderby'        => 'rand',
+					'no_found_rows'  => true,
+					'tax_query'      => array( array(
+						'taxonomy' => 'product_cat',
+						'field'    => 'term_id',
+						'terms'    => $categories,
+					) ),
+					'meta_query'     => array( array(
+						'key'     => '_stock_status',
+						'value'   => 'instock',
+					) ),
+				) );
+				$fallbacks = $cat_query->posts;
 
 			if ( count( $fallbacks ) > $needed ) {
 				shuffle( $fallbacks );
@@ -266,16 +274,20 @@ class BoughtTogether implements RecommendationEngineInterface {
 
 		// If still not enough, get from ANY category.
 		if ( $needed > 0 ) {
-			$any_products = wc_get_products(
-				array(
-					'status'       => 'publish',
-					'limit'        => $needed * 2,
-					'exclude'      => $all_exclude,
-					'orderby'      => 'rand',
-					'stock_status' => 'instock',
-					'return'       => 'ids',
-				)
-			);
+			$any_query = new \WP_Query( array(
+				'post_type'      => 'product',
+				'post_status'    => 'publish',
+				'posts_per_page' => $needed * 2,
+				'post__not_in'   => $all_exclude,
+				'fields'         => 'ids',
+				'orderby'        => 'rand',
+				'no_found_rows'  => true,
+				'meta_query'     => array( array(
+					'key'     => '_stock_status',
+					'value'   => 'instock',
+				) ),
+			) );
+			$any_products = $any_query->posts;
 
 			if ( count( $any_products ) > $needed ) {
 				$any_products = array_slice( $any_products, 0, $needed );

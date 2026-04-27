@@ -97,7 +97,9 @@ class RecommendationManager {
 		$category_id  = (int) ( $args['category_id'] ?? 0 );
 
 		if ( ! empty( $exclude_ids ) ) {
-			$engine_limit += count( $exclude_ids );
+			// Ask for enough to fill after filtering. Generous multiplier ensures
+			// Load More always has products even when many are excluded.
+			$engine_limit = max( $requested_limit * 3, $requested_limit + count( $exclude_ids ) + 10 );
 		}
 
 		// Category filter will discard many results — ask for 5x more.

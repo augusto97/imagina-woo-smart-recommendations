@@ -222,45 +222,72 @@ class BoughtTogether implements RecommendationEngineInterface {
 	}
 
 	private function supplement_with_fallback( int $productId, array $recommendations, array $exclude, int $limit ): array {
-		$product = wc_get_product( $productId );
-		if ( ! $product ) {
-			return $recommendations;
-		}
-
 		$existing_ids = array_column( $recommendations, 'product_id' );
-		$all_exclude  = array_merge( $exclude, $existing_ids );
+		$all_exclude  = array_unique( array_merge( $exclude, $existing_ids ) );
+		$needed       = $limit - count( $recommendations );
 
-		$categories = $product->get_category_ids();
-		if ( empty( $categories ) ) {
+		if ( $needed <= 0 ) {
 			return $recommendations;
 		}
 
-		$needed = $limit - count( $recommendations );
+		// Try same-category products first.
+		$product    = wc_get_product( $productId );
+		$categories = $product ? $product->get_category_ids() : array();
 
-		// Get more candidates than needed, then pick randomly for variety.
-		$fallbacks = wc_get_products(
-			array(
-				'status'       => 'publish',
-				'limit'        => $needed * 3,
-				'category'     => array_map( 'strval', $categories ),
-				'exclude'      => $all_exclude,
-				'orderby'      => 'rand',
-				'stock_status' => 'instock',
-				'return'       => 'ids',
-			)
-		);
+		if ( ! empty( $categories ) ) {
+			$fallbacks = wc_get_products(
+				array(
+					'status'       => 'publish',
+					'limit'        => $needed * 3,
+					'category'     => array_map( 'strval', $categories ),
+					'exclude'      => $all_exclude,
+					'orderby'      => 'rand',
+					'stock_status' => 'instock',
+					'return'       => 'ids',
+				)
+			);
 
-		if ( count( $fallbacks ) > $needed ) {
-			shuffle( $fallbacks );
-			$fallbacks = array_slice( $fallbacks, 0, $needed );
+			if ( count( $fallbacks ) > $needed ) {
+				shuffle( $fallbacks );
+				$fallbacks = array_slice( $fallbacks, 0, $needed );
+			}
+
+			foreach ( $fallbacks as $fid ) {
+				$recommendations[] = array(
+					'product_id' => $fid,
+					'score'      => 0.1,
+					'reason'     => __( 'Popular in this category', 'smartrec' ),
+				);
+			}
+
+			$all_exclude = array_merge( $all_exclude, $fallbacks );
+			$needed      = $limit - count( $recommendations );
 		}
 
-		foreach ( $fallbacks as $fallback_id ) {
-			$recommendations[] = array(
-				'product_id' => $fallback_id,
-				'score'      => 0.1,
-				'reason'     => __( 'Popular in this category', 'smartrec' ),
+		// If still not enough, get from ANY category.
+		if ( $needed > 0 ) {
+			$any_products = wc_get_products(
+				array(
+					'status'       => 'publish',
+					'limit'        => $needed * 2,
+					'exclude'      => $all_exclude,
+					'orderby'      => 'rand',
+					'stock_status' => 'instock',
+					'return'       => 'ids',
+				)
 			);
+
+			if ( count( $any_products ) > $needed ) {
+				$any_products = array_slice( $any_products, 0, $needed );
+			}
+
+			foreach ( $any_products as $fid ) {
+				$recommendations[] = array(
+					'product_id' => $fid,
+					'score'      => 0.05,
+					'reason'     => __( 'You might also like', 'smartrec' ),
+				);
+			}
 		}
 
 		return $recommendations;

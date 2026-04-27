@@ -596,6 +596,7 @@ class AdminPage {
 			'show_rating'          => 'bool',
 			'show_add_to_cart'     => 'bool',
 			'show_reason'          => 'bool',
+			'load_more_text'       => 'string',
 			'debug_mode'           => 'bool',
 			'delete_data_on_uninstall' => 'bool',
 			'engine_similar_enabled'        => 'bool',
@@ -687,12 +688,18 @@ class AdminPage {
 			}
 		}
 
-		// Load more per location.
+		// Load more and order per location.
 		$loc_load_more = array();
+		$loc_order     = array();
 		foreach ( $location_keys as $loc ) {
 			$lm_val = isset( $_POST['smartrec_loc_load_more'][ $loc ] ) ? absint( $_POST['smartrec_loc_load_more'][ $loc ] ) : 0;
 			if ( $lm_val > 0 && $lm_val <= 20 ) {
 				$loc_load_more[ $loc ] = $lm_val;
+			}
+
+			$order_val = isset( $_POST['smartrec_loc_order'][ $loc ] ) ? sanitize_text_field( wp_unslash( $_POST['smartrec_loc_order'][ $loc ] ) ) : 'score';
+			if ( in_array( $order_val, array( 'score', 'random' ), true ) ) {
+				$loc_order[ $loc ] = $order_val;
 			}
 		}
 
@@ -704,6 +711,7 @@ class AdminPage {
 		$this->settings->set( 'location_columns_tablet', $loc_cols_tablet );
 		$this->settings->set( 'location_columns_mobile', $loc_cols_mobile );
 		$this->settings->set( 'location_load_more', $loc_load_more );
+		$this->settings->set( 'location_order', $loc_order );
 
 		// Appearance / style settings.
 		$style_fields = array(
@@ -773,7 +781,109 @@ class AdminPage {
 					}
 				);
 				break;
+
+			case 'import_orders':
+				$count = $this->import_wc_order_history();
+				add_action(
+					'admin_notices',
+					function () use ( $count ) {
+						/* translators: %d: number of events imported */
+						echo '<div class="notice notice-success"><p>' . esc_html( sprintf( __( 'Order history imported. %d purchase events created. Now click "Rebuild Relationships" to build co-purchase data.', 'smartrec' ), $count ) ) . '</p></div>';
+					}
+				);
+				break;
 		}
+	}
+
+	/**
+	 * Import WooCommerce order history as purchase events.
+	 *
+	 * @return int Number of events created.
+	 */
+	private function import_wc_order_history(): int {
+		global $wpdb;
+
+		$events_table = $wpdb->prefix . 'smartrec_events';
+
+		// Clear previously imported order events to avoid duplicates.
+		$wpdb->query( "DELETE FROM {$events_table} WHERE context = 'order_import'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$imported = 0;
+		$page     = 1;
+		$now      = current_time( 'mysql' );
+
+		// Import ALL completed/processing orders (paginated).
+		while ( true ) {
+			$orders = wc_get_orders( array(
+				'status'  => array( 'completed', 'processing' ),
+				'limit'   => 100,
+				'page'    => $page,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+			) );
+
+			if ( empty( $orders ) ) {
+				break;
+			}
+
+			$values      = array();
+			$placeholder = '(%s, %d, %s, %d, %d, %s, %s)';
+
+			foreach ( $orders as $order ) {
+				$order_id   = $order->get_id();
+				$user_id    = $order->get_user_id();
+				$session_id = 'order_' . $order_id;
+
+				$items = $order->get_items();
+				if ( count( $items ) < 1 ) {
+					continue;
+				}
+
+				foreach ( $items as $item ) {
+					$product_id = $item->get_product_id();
+					if ( $product_id <= 0 ) {
+						continue;
+					}
+
+					// Use current date so the relationship builder finds them
+					// within its lookback window (default 90 days).
+					$values[] = $wpdb->prepare(
+						$placeholder,
+						$session_id,
+						$user_id,
+						'purchase',
+						$product_id,
+						$item->get_quantity(),
+						'order_import',
+						$now
+					);
+					++$imported;
+				}
+			}
+
+			// Batch insert.
+			if ( ! empty( $values ) ) {
+				$wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+					"INSERT INTO {$events_table} (session_id, user_id, event_type, product_id, quantity, context, created_at) VALUES " . implode( ',', $values )
+				);
+			}
+
+			++$page;
+
+			// Safety: max 5000 orders.
+			if ( $page > 50 ) {
+				break;
+			}
+		}
+
+		// Auto-rebuild relationships after import.
+		if ( $imported > 0 ) {
+			$builder = new \SmartRec\Cron\RelationshipBuilder( $this->settings );
+			$builder->build_all();
+			$this->settings->set( 'last_relationship_build', current_time( 'mysql' ) );
+		}
+
+		return $imported;
 	}
 
 	/**

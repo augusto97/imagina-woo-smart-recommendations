@@ -224,6 +224,7 @@ class Renderer {
 				'load_more'       => $location_settings['load_more'] ?? false,
 				'load_more_count' => $location_settings['load_more_count'] ?? 4,
 				'load_more_text'  => $this->settings->get( 'load_more_text', __( 'Load more', 'smartrec' ) ),
+				'order'           => $location_settings['order'] ?? 'score',
 				'location'        => $location,
 				'product_id'      => $productId,
 				'css_class'     => '',

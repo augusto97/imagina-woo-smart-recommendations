@@ -174,6 +174,7 @@ class SimilarProducts implements RecommendationEngineInterface {
 			'posts_per_page' => $limit,
 			'post__not_in'   => $exclude,
 			'fields'         => 'ids',
+			'orderby'        => 'rand',
 			'tax_query'      => array(
 				'relation' => 'OR',
 			),

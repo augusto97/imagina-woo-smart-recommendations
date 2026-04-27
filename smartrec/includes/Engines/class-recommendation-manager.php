@@ -97,12 +97,21 @@ class RecommendationManager {
 		$category_id  = (int) ( $args['category_id'] ?? 0 );
 
 		if ( ! empty( $exclude_ids ) ) {
-			$engine_limit += count( $exclude_ids );
+			// Ask for enough to fill after filtering. Generous multiplier ensures
+			// Load More always has products even when many are excluded.
+			$engine_limit = max( $requested_limit * 3, $requested_limit + count( $exclude_ids ) + 10 );
 		}
 
 		// Category filter will discard many results — ask for 5x more.
 		if ( $category_id > 0 ) {
 			$engine_limit = max( $engine_limit * 5, 40 );
+		}
+
+		// Random order: build a large pool so each page load picks different products.
+		$order    = $args['order'] ?? 'score';
+		$is_random = ( 'random' === $order );
+		if ( $is_random ) {
+			$engine_limit = max( $engine_limit * 3, $requested_limit * 3, 24 );
 		}
 
 		// Check cache only when NOT excluding (normal page load).
@@ -111,6 +120,11 @@ class RecommendationManager {
 			$cache_key = apply_filters( 'smartrec_cache_key', $cache_key, $location, $productId );
 			$cached    = $this->cache->get( $cache_key );
 			if ( false !== $cached ) {
+				if ( $is_random ) {
+					// Cache stores the full pool; pick a random subset each time.
+					shuffle( $cached );
+					return array_slice( $cached, 0, $requested_limit );
+				}
 				return $cached;
 			}
 		}
@@ -171,13 +185,24 @@ class RecommendationManager {
 		// Apply global exclude list.
 		$merged = $this->apply_exclusions( $merged, $location );
 
-		// Limit to requested amount.
-		$merged = array_slice( $merged, 0, $requested_limit );
+		// For random: cache the full validated pool, then pick a random subset.
+		// For score: just slice to requested limit.
+		if ( $is_random ) {
+			// Cache the full pool before slicing.
+			$pool_to_cache = $merged;
+
+			// Pick random subset for this page load.
+			shuffle( $merged );
+			$merged = array_slice( $merged, 0, $requested_limit );
+		} else {
+			$merged = array_slice( $merged, 0, $requested_limit );
+		}
 
 		do_action( 'smartrec_after_recommendations', $location, $productId, $merged );
 
 		// Cache results (skip cache for Load More requests with exclusions).
-		if ( empty( $exclude_ids ) && $this->settings->get( 'cache_enabled', true ) && ! empty( $merged ) ) {
+		$data_to_cache = $is_random ? ( $pool_to_cache ?? $merged ) : $merged;
+		if ( empty( $exclude_ids ) && $this->settings->get( 'cache_enabled', true ) && ! empty( $data_to_cache ) ) {
 			$engine_id = $args['engine'] ?? 'default';
 			$personalized_engines = array( 'personalized_mix', 'recently_viewed', 'similar', 'bought_together' );
 			$is_personalized = in_array( $engine_id, $personalized_engines, true ) || 'default' === $engine_id;
@@ -189,7 +214,7 @@ class RecommendationManager {
 			}
 
 			$ttl = apply_filters( 'smartrec_cache_ttl', $ttl, $location );
-			$this->cache->set( $cache_key, $merged, $ttl );
+			$this->cache->set( $cache_key, $data_to_cache, $ttl );
 		}
 
 		return $merged;

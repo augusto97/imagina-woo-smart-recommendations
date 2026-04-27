@@ -99,11 +99,38 @@ class GutenbergBlock {
 				'columnsMobile'  => array( 'type' => 'number', 'default' => 1 ),
 				'layout'         => array( 'type' => 'string', 'default' => 'grid' ),
 				'loadMore'       => array( 'type' => 'number', 'default' => 0 ),
+				'loadMoreText'   => array( 'type' => 'string', 'default' => '' ),
 				'showPrice'      => array( 'type' => 'boolean', 'default' => true ),
 				'showRating'     => array( 'type' => 'boolean', 'default' => true ),
 				'showAddToCart'  => array( 'type' => 'boolean', 'default' => true ),
 				'showReason'     => array( 'type' => 'boolean', 'default' => false ),
 				'category'       => array( 'type' => 'string', 'default' => '' ),
+				'order'          => array( 'type' => 'string', 'default' => 'score' ),
+			),
+		) );
+
+		// Product Template block — for FSE product templates, Kadence WooTemplates, etc.
+		register_block_type( 'smartrec/product-recommendations', array(
+			'api_version'     => 2,
+			'editor_script'   => 'smartrec-block-editor',
+			'editor_style'    => 'smartrec-block-editor-style',
+			'render_callback' => array( $this, 'render_product_block' ),
+			'uses_context'    => array( 'postId', 'postType' ),
+			'attributes'      => array(
+				'blockType'      => array( 'type' => 'string', 'default' => 'similar' ),
+				'title'          => array( 'type' => 'string', 'default' => '' ),
+				'limit'          => array( 'type' => 'number', 'default' => 4 ),
+				'columns'        => array( 'type' => 'number', 'default' => 4 ),
+				'columnsTablet'  => array( 'type' => 'number', 'default' => 2 ),
+				'columnsMobile'  => array( 'type' => 'number', 'default' => 1 ),
+				'layout'         => array( 'type' => 'string', 'default' => 'grid' ),
+				'loadMore'       => array( 'type' => 'number', 'default' => 0 ),
+				'loadMoreText'   => array( 'type' => 'string', 'default' => '' ),
+				'showPrice'      => array( 'type' => 'boolean', 'default' => true ),
+				'showRating'     => array( 'type' => 'boolean', 'default' => true ),
+				'showAddToCart'  => array( 'type' => 'boolean', 'default' => true ),
+				'showReason'     => array( 'type' => 'boolean', 'default' => true ),
+				'order'          => array( 'type' => 'string', 'default' => 'score' ),
 			),
 		) );
 	}
@@ -144,10 +171,12 @@ class GutenbergBlock {
 			'columns_mobile' => (int) ( $attributes['columnsMobile'] ?? 1 ),
 			'layout'         => $attributes['layout'] ?? 'grid',
 			'load_more'      => (int) ( $attributes['loadMore'] ?? 0 ),
+			'load_more_text' => $attributes['loadMoreText'] ?? '',
 			'show_price'     => ! empty( $attributes['showPrice'] ) ? 'yes' : 'no',
 			'show_rating'    => ! empty( $attributes['showRating'] ) ? 'yes' : 'no',
 			'show_add_to_cart' => ! empty( $attributes['showAddToCart'] ) ? 'yes' : 'no',
 			'show_reason'    => ! empty( $attributes['showReason'] ) ? 'yes' : 'no',
+			'order'          => $attributes['order'] ?? 'score',
 		);
 
 		if ( ! empty( $attributes['category'] ) ) {
@@ -165,5 +194,91 @@ class GutenbergBlock {
 		}
 
 		return do_shortcode( '[' . $shortcode_tag . ' ' . implode( ' ', $parts ) . ']' );
+	}
+
+	/**
+	 * Server-side render for the product template block.
+	 * Automatically detects the current product from multiple sources.
+	 *
+	 * @param array     $attributes Block attributes.
+	 * @param string    $content    Block content.
+	 * @param \WP_Block $block      Block instance with context.
+	 * @return string
+	 */
+	public function render_product_block( $attributes, $content, $block ) {
+		// Detect product ID from multiple sources (FSE, classic, template builders).
+		$product_id = 0;
+
+		// 1. FSE block context (postId from query loop / product template).
+		if ( ! empty( $block->context['postId'] ) ) {
+			$post_type = get_post_type( $block->context['postId'] );
+			if ( 'product' === $post_type ) {
+				$product_id = (int) $block->context['postId'];
+			}
+		}
+
+		// 2. Global product (set by WooCommerce and template builders).
+		if ( $product_id <= 0 && ! empty( $GLOBALS['product'] ) && $GLOBALS['product'] instanceof \WC_Product ) {
+			$product_id = $GLOBALS['product']->get_id();
+		}
+
+		// 3. Global post (classic templates, Kadence, Elementor).
+		if ( $product_id <= 0 ) {
+			$current_post = get_post();
+			if ( $current_post && 'product' === $current_post->post_type ) {
+				$product_id = $current_post->ID;
+			}
+		}
+
+		// 4. WooCommerce is_product() check.
+		if ( $product_id <= 0 && function_exists( 'is_product' ) && is_product() ) {
+			$product_id = get_queried_object_id();
+		}
+
+		if ( $product_id <= 0 ) {
+			return '';
+		}
+
+		$type_map = array(
+			'similar'          => array( 'engine' => 'similar', 'title' => __( 'Similar products', 'smartrec' ) ),
+			'bought_together'  => array( 'engine' => 'bought_together', 'title' => __( 'Frequently bought together', 'smartrec' ) ),
+			'viewed_together'  => array( 'engine' => 'viewed_together', 'title' => __( 'Others also viewed', 'smartrec' ) ),
+			'complementary'    => array( 'engine' => 'complementary', 'title' => __( 'Complete your purchase', 'smartrec' ) ),
+			'recently_viewed'  => array( 'engine' => 'recently_viewed', 'title' => __( 'Recently viewed', 'smartrec' ) ),
+			'personalized_mix' => array( 'engine' => 'personalized_mix', 'title' => __( 'Recommended for you', 'smartrec' ) ),
+			'trending'         => array( 'engine' => 'trending', 'title' => __( 'Trending now', 'smartrec' ) ),
+		);
+
+		$block_type = $attributes['blockType'] ?? 'similar';
+		$preset     = $type_map[ $block_type ] ?? $type_map['similar'];
+		$title      = ! empty( $attributes['title'] ) ? $attributes['title'] : $preset['title'];
+
+		$renderer = new Renderer( $this->manager, $this->settings );
+
+		$args = array(
+			'engine'           => $preset['engine'],
+			'limit'            => (int) ( $attributes['limit'] ?? 4 ),
+			'layout'           => $attributes['layout'] ?? 'grid',
+			'title'            => $title,
+			'columns'          => (int) ( $attributes['columns'] ?? 4 ),
+			'columns_tablet'   => (int) ( $attributes['columnsTablet'] ?? 2 ),
+			'columns_mobile'   => (int) ( $attributes['columnsMobile'] ?? 1 ),
+			'show_price'       => ! empty( $attributes['showPrice'] ),
+			'show_rating'      => ! empty( $attributes['showRating'] ),
+			'show_add_to_cart' => ! empty( $attributes['showAddToCart'] ),
+			'show_reason'      => ! empty( $attributes['showReason'] ),
+			'order'            => $attributes['order'] ?? 'score',
+			'use_wc_template'  => $this->settings->get( 'use_wc_template', false ),
+		);
+
+		$load_more = (int) ( $attributes['loadMore'] ?? 0 );
+		if ( $load_more > 0 ) {
+			$args['load_more']       = true;
+			$args['load_more_count'] = $load_more;
+			$custom_text = $attributes['loadMoreText'] ?? '';
+			$args['load_more_text'] = ! empty( $custom_text ) ? $custom_text : $this->settings->get( 'load_more_text', __( 'Load more', 'smartrec' ) );
+		}
+
+		return $renderer->render( 'single_product_below', $product_id, $args );
 	}
 }

@@ -170,17 +170,31 @@ class TrendingProducts implements RecommendationEngineInterface {
 	 * @return array
 	 */
 	private function get_fallback_popular( array $exclude, int $limit ): array {
-		$products = wc_get_products(
-			array(
-				'status'       => 'publish',
-				'limit'        => $limit,
-				'exclude'      => $exclude,
-				'orderby'      => 'popularity',
-				'order'        => 'DESC',
-				'stock_status' => 'instock',
-				'return'       => 'ids',
-			)
-		);
+		// Use direct WP_Query to avoid any wc_get_products limit overrides.
+		$query = new \WP_Query( array(
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
+			'posts_per_page' => max( $limit * 3, 30 ),
+			'post__not_in'   => $exclude,
+			'fields'         => 'ids',
+			'orderby'        => 'rand',
+			'meta_query'     => array(
+				array(
+					'key'     => '_stock_status',
+					'value'   => 'instock',
+					'compare' => '=',
+				),
+			),
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		) );
+
+		$products = $query->posts;
+
+		if ( count( $products ) > $limit ) {
+			$products = array_slice( $products, 0, $limit );
+		}
 
 		$recommendations = array();
 		foreach ( $products as $pid ) {

@@ -78,6 +78,16 @@ class ToolsPage {
 				</form>
 			</div>
 
+			<div class="smartrec-card" style="flex: 1; min-width: 250px; padding: 15px; border: 1px solid #ccd0d4; background: #fff; border-left: 3px solid #7f54b3;">
+				<h3><?php esc_html_e( 'Import Order History', 'smartrec' ); ?></h3>
+				<p><?php esc_html_e( 'Import existing WooCommerce orders as purchase events. This builds co-purchase relationships from your store\'s sales history. Run this once after installing the plugin.', 'smartrec' ); ?></p>
+				<form method="post">
+					<?php wp_nonce_field( 'smartrec_action', 'smartrec_action_nonce' ); ?>
+					<input type="hidden" name="smartrec_action" value="import_orders">
+					<?php submit_button( __( 'Import Orders', 'smartrec' ), 'primary', 'submit', false ); ?>
+				</form>
+			</div>
+
 			<div class="smartrec-card" style="flex: 1; min-width: 250px; padding: 15px; border: 1px solid #ccd0d4; background: #fff;">
 				<h3><?php esc_html_e( 'Recount Scores', 'smartrec' ); ?></h3>
 				<p><?php esc_html_e( 'Recalculate all product popularity and trending scores from tracking data.', 'smartrec' ); ?></p>

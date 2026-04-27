@@ -6,6 +6,7 @@
 	var el                = wp.element.createElement;
 	var registerBlockType = wp.blocks.registerBlockType;
 	var InspectorControls = wp.blockEditor.InspectorControls;
+	var useBlockProps      = wp.blockEditor.useBlockProps;
 	var PanelBody         = wp.components.PanelBody;
 	var SelectControl     = wp.components.SelectControl;
 	var TextControl       = wp.components.TextControl;
@@ -128,11 +129,27 @@
 					el( ToggleControl, { label: __( 'Reason Badge', 'smartrec' ), checked: a.showReason, onChange: function ( v ) { set( { showReason: v } ); } } )
 				),
 
-				el( PanelBody, { title: __( 'Load More', 'smartrec' ), initialOpen: false },
+				el( PanelBody, { title: __( 'Load More & Order', 'smartrec' ), initialOpen: false },
 					el( RangeControl, {
 						label: __( 'Products per click (0 = off)', 'smartrec' ),
 						value: a.loadMore, onChange: function ( v ) { set( { loadMore: v } ); },
 						min: 0, max: 20,
+					} ),
+					el( TextControl, {
+						label: __( 'Button Text', 'smartrec' ),
+						value: a.loadMoreText || '',
+						onChange: function ( v ) { set( { loadMoreText: v } ); },
+						placeholder: __( 'Load more', 'smartrec' ),
+						help: __( 'Leave empty to use the global setting.', 'smartrec' ),
+					} ),
+					el( SelectControl, {
+						label: __( 'Product Order', 'smartrec' ),
+						value: a.order,
+						options: [
+							{ value: 'score', label: __( 'By relevance (default)', 'smartrec' ) },
+							{ value: 'random', label: __( 'Random (changes on each page load)', 'smartrec' ) },
+						],
+						onChange: function ( v ) { set( { order: v } ); },
 					} )
 				)
 			);
@@ -144,6 +161,7 @@
 			details.push( a.layout );
 			if ( catName ) { details.push( catName ); }
 			if ( a.loadMore > 0 ) { details.push( __( 'Load More', 'smartrec' ) + ': +' + a.loadMore ); }
+			if ( a.order === 'random' ) { details.push( __( 'Random order', 'smartrec' ) ); }
 
 			var displayTitle = a.title || typeName;
 			if ( catName ) {
@@ -174,7 +192,9 @@
 				)
 			);
 
-			return el( 'div', { className: props.className },
+			var blockProps = useBlockProps ? useBlockProps() : { className: props.className };
+
+			return el( 'div', blockProps,
 				sidebar,
 				placeholder
 			);
@@ -182,4 +202,139 @@
 
 		save: function () { return null; },
 	} );
+
+	/* =========================================================
+	 * Product Template Block — for FSE / Kadence / custom templates
+	 * ========================================================= */
+
+	var productEngines = [
+		{ value: 'similar',          label: __( 'Similar Products', 'smartrec' ) },
+		{ value: 'bought_together',  label: __( 'Frequently Bought Together', 'smartrec' ) },
+		{ value: 'viewed_together',  label: __( 'Others Also Viewed', 'smartrec' ) },
+		{ value: 'complementary',    label: __( 'Complete Your Purchase', 'smartrec' ) },
+		{ value: 'recently_viewed',  label: __( 'Recently Viewed', 'smartrec' ) },
+		{ value: 'personalized_mix', label: __( 'Recommended For You', 'smartrec' ) },
+		{ value: 'trending',         label: __( 'Trending Now', 'smartrec' ) },
+	];
+
+	registerBlockType( 'smartrec/product-recommendations', {
+		title: 'SmartRec — ' + __( 'Product Page Recommendations', 'smartrec' ),
+		description: __( 'Dynamic product recommendations for single product templates. Auto-detects the current product. Use in FSE product templates, Kadence WooTemplates, or any product page builder.', 'smartrec' ),
+		category: 'woocommerce',
+		icon: { src: 'products', foreground: '#7f54b3' },
+		keywords: [ 'smartrec', 'product', 'similar', 'related', 'bought together', 'upsell', 'cross-sell', 'FSE', 'template' ],
+		supports: { html: false, align: [ 'wide', 'full' ] },
+
+		edit: function ( props ) {
+			var a   = props.attributes;
+			var set = props.setAttributes;
+			var blockProps = useBlockProps ? useBlockProps() : { className: props.className };
+
+			var selectedEngine = productEngines.filter( function(e) { return e.value === a.blockType; } )[0];
+			var engineName     = selectedEngine ? selectedEngine.label : a.blockType;
+
+			var sidebar = el( InspectorControls, {},
+
+				el( PanelBody, { title: __( 'Recommendation Engine', 'smartrec' ), initialOpen: true },
+					el( SelectControl, {
+						label: __( 'Engine', 'smartrec' ),
+						value: a.blockType,
+						options: productEngines,
+						onChange: function ( v ) { set( { blockType: v } ); },
+						help: __( 'The current product is detected automatically from the template context.', 'smartrec' ),
+					} ),
+					el( TextControl, {
+						label: __( 'Custom Title', 'smartrec' ),
+						value: a.title,
+						onChange: function ( v ) { set( { title: v } ); },
+						placeholder: __( 'Leave empty for default', 'smartrec' ),
+					} )
+				),
+
+				el( PanelBody, { title: __( 'Layout', 'smartrec' ), initialOpen: false },
+					el( SelectControl, {
+						label: __( 'Style', 'smartrec' ),
+						value: a.layout,
+						options: layouts,
+						onChange: function ( v ) { set( { layout: v } ); },
+					} ),
+					el( RangeControl, {
+						label: __( 'Products', 'smartrec' ),
+						value: a.limit, onChange: function ( v ) { set( { limit: v } ); },
+						min: 1, max: 20,
+					} )
+				),
+
+				el( PanelBody, { title: __( 'Columns', 'smartrec' ), initialOpen: false },
+					el( RangeControl, { label: __( 'Desktop', 'smartrec' ), value: a.columns, onChange: function ( v ) { set( { columns: v } ); }, min: 1, max: 6 } ),
+					el( RangeControl, { label: __( 'Tablet', 'smartrec' ), value: a.columnsTablet, onChange: function ( v ) { set( { columnsTablet: v } ); }, min: 1, max: 6 } ),
+					el( RangeControl, { label: __( 'Mobile', 'smartrec' ), value: a.columnsMobile, onChange: function ( v ) { set( { columnsMobile: v } ); }, min: 1, max: 4 } )
+				),
+
+				el( PanelBody, { title: __( 'Display', 'smartrec' ), initialOpen: false },
+					el( ToggleControl, { label: __( 'Price', 'smartrec' ), checked: a.showPrice, onChange: function ( v ) { set( { showPrice: v } ); } } ),
+					el( ToggleControl, { label: __( 'Rating', 'smartrec' ), checked: a.showRating, onChange: function ( v ) { set( { showRating: v } ); } } ),
+					el( ToggleControl, { label: __( 'Add to Cart', 'smartrec' ), checked: a.showAddToCart, onChange: function ( v ) { set( { showAddToCart: v } ); } } ),
+					el( ToggleControl, { label: __( 'Reason Badge', 'smartrec' ), checked: a.showReason, onChange: function ( v ) { set( { showReason: v } ); } } )
+				),
+
+				el( PanelBody, { title: __( 'Load More & Order', 'smartrec' ), initialOpen: false },
+					el( RangeControl, {
+						label: __( 'Products per click (0 = off)', 'smartrec' ),
+						value: a.loadMore, onChange: function ( v ) { set( { loadMore: v } ); },
+						min: 0, max: 20,
+					} ),
+					el( TextControl, {
+						label: __( 'Button Text', 'smartrec' ),
+						value: a.loadMoreText || '',
+						onChange: function ( v ) { set( { loadMoreText: v } ); },
+						placeholder: __( 'Load more', 'smartrec' ),
+					} ),
+					el( SelectControl, {
+						label: __( 'Order', 'smartrec' ),
+						value: a.order,
+						options: [
+							{ value: 'score', label: __( 'By relevance', 'smartrec' ) },
+							{ value: 'random', label: __( 'Random', 'smartrec' ) },
+						],
+						onChange: function ( v ) { set( { order: v } ); },
+					} )
+				)
+			);
+
+			var details = [ a.limit + ' products', a.columns + ' col', a.layout ];
+			if ( a.loadMore > 0 ) { details.push( '+' + a.loadMore + ' load more' ); }
+			if ( a.order === 'random' ) { details.push( 'random' ); }
+
+			var displayTitle = a.title || engineName;
+
+			var placeholder = el( 'div', {
+					style: {
+						border: '2px dashed #7f54b3',
+						borderRadius: '8px',
+						padding: '20px',
+						textAlign: 'center',
+						background: '#faf8fc',
+					},
+				},
+				el( 'div', { style: { fontSize: '12px', fontWeight: 600, color: '#7f54b3', marginBottom: '4px', letterSpacing: '0.5px', textTransform: 'uppercase' } },
+					'SmartRec — ' + __( 'Product Template', 'smartrec' )
+				),
+				el( 'div', { style: { fontSize: '16px', fontWeight: 600, color: '#1d2327', marginBottom: '6px' } },
+					displayTitle
+				),
+				el( 'div', { style: { fontSize: '12px', color: '#646970' } },
+					details.join( '  ·  ' )
+				),
+				el( 'div', { style: { fontSize: '11px', color: '#8c8f94', marginTop: '10px', fontStyle: 'italic' } },
+					__( 'Auto-detects the current product. Works in FSE templates, Kadence, Elementor, etc.', 'smartrec' )
+				)
+			);
+
+			return el( 'div', blockProps, sidebar, placeholder );
+		},
+
+		save: function () { return null; },
+	} );
+
 } )();

@@ -280,13 +280,6 @@ class RestAPI {
 
 		$recommendations = $this->manager->getRecommendations( $location, $product_id, $args );
 
-		// Filter out excluded IDs (safety net in case engine doesn't support exclude).
-		if ( ! empty( $exclude_ids ) ) {
-			$recommendations = array_values( array_filter( $recommendations, function ( $rec ) use ( $exclude_ids ) {
-				return ! in_array( (int) $rec['product_id'], $exclude_ids, true );
-			} ) );
-		}
-
 		if ( 'html' === $format ) {
 			$renderer = new \SmartRec\Display\Renderer( $this->manager, $this->settings );
 
